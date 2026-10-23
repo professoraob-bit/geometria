@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PoliLab 3D & Arena dos Poliedros</title>
+  <title>PoliLab 3D & Arena de Euler</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Three.js para renderização 3D -->
+  <!-- Three.js r128 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- Canvas Confetti para celebrações -->
+  <!-- Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -24,50 +24,22 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(148, 163, 184, 0.3);
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(148, 163, 184, 0.5);
-    }
-
     .glass-card {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(14px);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    @keyframes successGlow {
-      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.8); }
-      70% { box-shadow: 0 0 0 16px rgba(34, 197, 94, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-    }
-    .pulse-success {
-      animation: successGlow 0.8s ease-out;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-6px); }
-      40%, 80% { transform: translateX(6px); }
-    }
-    .shake-anim {
-      animation: shake 0.4s ease-in-out;
+    #three-canvas-root canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
     }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
 
-  <!-- Cabeçalho Principal -->
+  <!-- Cabeçalho -->
   <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3 sm:px-6">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -82,22 +54,22 @@
         </div>
       </div>
 
-      <!-- Abas de Modo -->
+      <!-- Abas de Navegação -->
       <div class="flex items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800">
-        <button id="tab-lab-btn" onclick="switchMode('lab')" class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow">
+        <button id="tab-lab-btn" onclick="switchMode('lab')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white shadow">
           <i data-lucide="eye" class="w-4 h-4"></i>
           <span>Laboratório 3D</span>
         </button>
-        <button id="tab-game-btn" onclick="switchMode('game')" class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white">
-          <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+        <button id="tab-game-btn" onclick="switchMode('game')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          <i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i>
           <span>Missões Quiz</span>
           <span id="header-score-badge" class="ml-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-xs border border-amber-500/30 hidden font-mono-num">0 pts</span>
         </button>
-        <button id="tab-speed-btn" onclick="switchMode('speed')" class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white">
+        <button id="tab-speed-btn" onclick="switchMode('speed')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
           <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
           <span>Detetive Euler</span>
         </button>
-        <button id="tab-theory-btn" onclick="switchMode('theory')" class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white">
+        <button id="tab-theory-btn" onclick="switchMode('theory')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
           <i data-lucide="book-open" class="w-4 h-4"></i>
           <span class="hidden sm:inline">Guia & Euler</span>
         </button>
@@ -108,22 +80,22 @@
   <!-- Conteúdo Principal -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- Painel 3D e Controles Centrais (Lado Esquerdo / Superior) -->
+    <!-- Painel 3D e Métricas de V, A, F (Esquerda) -->
     <section class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
       
-      <!-- Container do Canvas 3D -->
-      <div class="relative w-full h-[380px] sm:h-[460px] md:h-[490px] rounded-2xl overflow-hidden border border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl flex flex-col justify-between">
+      <!-- Container do Visualizador 3D -->
+      <div id="three-container-box" class="relative w-full h-[400px] sm:h-[480px] rounded-2xl overflow-hidden border border-slate-800 bg-[#070b14] shadow-2xl flex flex-col justify-between">
         
-        <!-- Canvas Real -->
-        <div id="three-container" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing block"></div>
+        <!-- Canvas Root -->
+        <div id="three-canvas-root" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
 
-        <!-- Indicador Superior do Canvas -->
+        <!-- Indicador Superior do Sólido -->
         <div class="relative z-10 p-3 pointer-events-none flex justify-between items-start gap-2">
           <div class="glass-card px-3.5 py-2 rounded-xl text-xs flex items-center gap-2.5 text-slate-200 shadow-lg">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
             <div>
-              <span id="canvas-solid-name" class="font-bold text-white text-sm block">Tetraedro Regular</span>
-              <span id="canvas-solid-class" class="text-[11px] text-indigo-300">Poliedro de Platão</span>
+              <span id="canvas-solid-name" class="font-bold text-white text-sm block">Octaedro Regular</span>
+              <span id="canvas-solid-class" class="text-[11px] text-indigo-300">Platão • V:6 A:12 F:8</span>
             </div>
           </div>
 
@@ -133,18 +105,18 @@
           </div>
         </div>
 
-        <!-- Barra inferior do Canvas: controles visuais -->
+        <!-- Barra inferior do Canvas com controles visuais -->
         <div class="relative z-10 p-3 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent">
           <div class="flex items-center gap-1.5 sm:gap-2">
-            <button onclick="toggleVisual('wireframe')" id="btn-wireframe" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-indigo-400" title="Ativar/Desativar Arestas">
+            <button onclick="toggleVisual('wireframe')" id="btn-wireframe" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-indigo-400">
               <i data-lucide="git-commit" class="w-3.5 h-3.5"></i>
               <span>Arestas</span>
             </button>
-            <button onclick="toggleVisual('vertices')" id="btn-vertices" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-emerald-400" title="Ativar/Desativar Vértices">
+            <button onclick="toggleVisual('vertices')" id="btn-vertices" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-emerald-400">
               <i data-lucide="circle-dot" class="w-3.5 h-3.5"></i>
               <span>Vértices</span>
             </button>
-            <button onclick="toggleVisual('faces')" id="btn-faces" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-pink-400" title="Ativar/Desativar Faces sólidas">
+            <button onclick="toggleVisual('faces')" id="btn-faces" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-pink-400">
               <i data-lucide="square" class="w-3.5 h-3.5"></i>
               <span>Faces</span>
             </button>
@@ -155,72 +127,68 @@
           </div>
 
           <div class="flex items-center gap-1.5">
-            <button onclick="toggleAudioMute()" id="btn-audio" class="p-1.5 rounded-lg glass-card hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Ligar/Desligar Efeitos Sonoros">
+            <button onclick="toggleAudioMute()" id="btn-audio" class="p-2 rounded-lg glass-card hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Ligar/Desligar Som">
               <i id="audio-icon" data-lucide="volume-2" class="w-4 h-4 text-cyan-400"></i>
             </button>
-            <button onclick="resetCamera()" class="p-1.5 rounded-lg glass-card hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Centralizar Visualização">
+            <button onclick="resetCamera()" class="p-2 rounded-lg glass-card hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Centralizar">
               <i data-lucide="maximize-2" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Barra Interativa dos Elementos (V, A, F) e Teorema de Euler -->
+      <!-- Barra de Euler com Cards das Variáveis -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <!-- Vértices -->
         <div class="glass-card p-3 rounded-xl border-l-4 border-emerald-500 flex flex-col justify-between shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Vértices (V)</span>
             <i data-lucide="circle-dot" class="w-4 h-4 text-emerald-400"></i>
           </div>
           <div class="mt-1 flex items-baseline gap-2">
-            <span id="stat-v" class="text-2xl font-bold font-mono-num text-emerald-400">4</span>
+            <span id="stat-v" class="text-2xl font-bold font-mono-num text-emerald-400">6</span>
             <span class="text-[11px] text-slate-500">pontos</span>
           </div>
         </div>
 
-        <!-- Arestas -->
         <div class="glass-card p-3 rounded-xl border-l-4 border-indigo-500 flex flex-col justify-between shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Arestas (A)</span>
             <i data-lucide="git-commit" class="w-4 h-4 text-indigo-400"></i>
           </div>
           <div class="mt-1 flex items-baseline gap-2">
-            <span id="stat-a" class="text-2xl font-bold font-mono-num text-indigo-400">6</span>
+            <span id="stat-a" class="text-2xl font-bold font-mono-num text-indigo-400">12</span>
             <span class="text-[11px] text-slate-500">segmentos</span>
           </div>
         </div>
 
-        <!-- Faces -->
         <div class="glass-card p-3 rounded-xl border-l-4 border-pink-500 flex flex-col justify-between shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Faces (F)</span>
             <i data-lucide="square" class="w-4 h-4 text-pink-400"></i>
           </div>
           <div class="mt-1 flex items-baseline gap-2">
-            <span id="stat-f" class="text-2xl font-bold font-mono-num text-pink-400">4</span>
+            <span id="stat-f" class="text-2xl font-bold font-mono-num text-pink-400">8</span>
             <span class="text-[11px] text-slate-500">polígonos</span>
           </div>
         </div>
 
-        <!-- Relação de Euler -->
         <div class="glass-card p-3 rounded-xl border-l-4 border-amber-500 flex flex-col justify-between bg-amber-500/5 shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span class="font-bold text-amber-300">V - A + F</span>
             <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
           </div>
           <div class="mt-1 flex items-center justify-between">
-            <span id="stat-euler-calc" class="text-xs sm:text-sm font-mono-num text-amber-200">4 - 6 + 4 =</span>
+            <span id="stat-euler-calc" class="text-xs sm:text-sm font-mono-num text-amber-200">6 - 12 + 8 =</span>
             <span id="stat-euler-result" class="text-2xl font-black font-mono-num text-amber-400">2</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Painel Lateral: Depende do Modo Ativo (Lado Direito) -->
+    <!-- Painel Lateral: Modos da Aplicação (Direita) -->
     <section class="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
 
-      <!-- MODO 1: LABORATÓRIO (Seleção e Exploração Livre) -->
+      <!-- MODO 1: BIBLIOTECA E DETALHES -->
       <div id="mode-lab" class="space-y-4">
         <div class="glass-card p-4 sm:p-5 rounded-2xl border border-slate-800">
           <h2 class="text-base font-bold text-white flex items-center gap-2 mb-2">
@@ -231,17 +199,17 @@
             Clique em qualquer sólido para manipulá-lo no espaço 3D e conferir a relação de Euler:
           </p>
 
-          <!-- Platão -->
+          <!-- Poliedros de Platão -->
           <div class="mb-4">
             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Os 5 Poliedros de Platão</span>
             <div class="grid grid-cols-2 gap-2">
-              <button onclick="loadSolid('tetrahedron')" id="btn-solid-tetrahedron" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-indigo-300">
+              <button onclick="loadSolid('tetrahedron')" id="btn-solid-tetrahedron" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
                 <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Tetraedro (4F)
               </button>
               <button onclick="loadSolid('cube')" id="btn-solid-cube" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
                 <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Hexaedro / Cubo (6F)
               </button>
-              <button onclick="loadSolid('octahedron')" id="btn-solid-octahedron" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
+              <button onclick="loadSolid('octahedron')" id="btn-solid-octahedron" class="solid-select-btn p-2 rounded-xl text-left border border-indigo-500 bg-indigo-600/25 text-indigo-300 text-xs font-semibold flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Octaedro (8F)
               </button>
               <button onclick="loadSolid('dodecahedron')" id="btn-solid-dodecahedron" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
@@ -253,7 +221,7 @@
             </div>
           </div>
 
-          <!-- Prismas & Pirâmides -->
+          <!-- Outros Poliedros -->
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Prismas, Pirâmides e Outros</span>
             <div class="grid grid-cols-2 gap-2">
@@ -273,23 +241,23 @@
           </div>
         </div>
 
-        <!-- Ficha de Informação do Sólido Selecionado -->
+        <!-- Ficha Técnica -->
         <div class="glass-card p-4 sm:p-5 rounded-2xl border border-slate-800">
           <div class="flex items-center justify-between mb-2">
-            <h3 id="info-solid-title" class="font-bold text-white text-base">Tetraedro Regular</h3>
+            <h3 id="info-solid-title" class="font-bold text-white text-base">Octaedro Regular</h3>
             <span id="info-solid-tag" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Platão</span>
           </div>
           <p id="info-solid-desc" class="text-xs text-slate-300 leading-relaxed mb-3">
-            Poliedro composto por 4 faces triangulares equiláteras. É a pirâmide mais simples possível no espaço tridimensional.
+            Composto por 8 faces triangulares equiláteras. Pode ser visualizado como duas pirâmides de base quadrada unidas pela base.
           </p>
           <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 space-y-2 text-xs">
             <div class="flex justify-between">
               <span class="text-slate-400">Formato das Faces:</span>
-              <span id="info-face-type" class="font-semibold text-slate-200">Triângulos Equiláteros</span>
+              <span id="info-face-type" class="font-semibold text-slate-200">Triângulos Equiláteros (8)</span>
             </div>
             <div class="flex justify-between">
               <span class="text-slate-400">Distribuição nos Vértices:</span>
-              <span id="info-vert-order" class="font-semibold text-slate-200">3 triângulos por vértice</span>
+              <span id="info-vert-order" class="font-semibold text-slate-200">4 arestas / triângulos por vértice</span>
             </div>
             <div class="flex justify-between items-center pt-1 border-t border-slate-800">
               <span class="text-slate-400">Teste de Euler:</span>
@@ -299,19 +267,18 @@
         </div>
       </div>
 
-      <!-- MODO 2: JOGO DE DESAFIOS (Missões e Quiz) -->
+      <!-- MODO 2: MISSÕES QUIZ (PROBLEMAS DIDÁTICOS) -->
       <div id="mode-game" class="hidden space-y-4">
         <div class="glass-card p-5 rounded-2xl border border-indigo-500/30 shadow-xl bg-gradient-to-b from-indigo-950/20 to-slate-900">
           
-          <!-- Topo do Jogo: Nível e Pontuação -->
           <div class="flex items-center justify-between pb-3 border-b border-slate-800">
             <div>
-              <span class="text-[11px] font-bold text-indigo-400 tracking-wider uppercase block">Desafio de Geometria</span>
-              <h2 id="game-quest-num" class="text-sm font-bold text-white">Missão 1 de 10</h2>
+              <span class="text-[11px] font-bold text-indigo-400 tracking-wider uppercase block">Desafio Didático</span>
+              <h2 id="game-quest-num" class="text-sm font-bold text-white">Exercício 1 de 10</h2>
             </div>
             <div class="flex items-center gap-2">
               <div class="text-right">
-                <span class="text-[10px] text-slate-400 block">Pontuação</span>
+                <span class="text-[10px] text-slate-400 block">Pontos</span>
                 <span id="game-score" class="text-lg font-black font-mono-num text-amber-400">0</span>
               </div>
               <div class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300">
@@ -320,68 +287,63 @@
             </div>
           </div>
 
-          <!-- Barra de Progresso -->
           <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
             <div id="game-progress-bar" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full w-[10%] transition-all duration-300"></div>
           </div>
 
-          <!-- Enunciado da Pergunta -->
           <div class="mt-4">
-            <span id="game-badge-type" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">Relação de Euler</span>
-            <p id="game-question-text" class="text-sm font-semibold text-slate-100 mt-2 leading-snug">
-              Um poliedro convexo possui 6 vértices e 8 faces. Quantas arestas ele possui de acordo com a Relação de Euler?
+            <span id="game-badge-type" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Cálculo de Arestas</span>
+            <p id="game-question-text" class="text-sm font-semibold text-slate-100 mt-2 leading-relaxed">
+              Carregando questão...
             </p>
           </div>
 
-          <!-- Dica Didática Expansível -->
           <div class="mt-3">
             <button onclick="toggleHint()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold">
               <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
               <span id="hint-toggle-text">Ver Dica do Professor</span>
             </button>
-            <div id="game-hint-box" class="hidden mt-2 p-2.5 rounded-lg bg-indigo-950/50 border border-indigo-500/30 text-xs text-indigo-200">
-              Lembre-se da relação de Euler: <strong>V - A + F = 2</strong>. Isole o <strong>A</strong> somando V + F e subtraindo 2!
+            <div id="game-hint-box" class="hidden mt-2 p-2.5 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-xs text-indigo-200 leading-relaxed">
+              Dica explicativa...
             </div>
           </div>
 
-          <!-- Opções de Resposta -->
           <div id="game-options-container" class="mt-4 grid grid-cols-1 gap-2.5">
-            <!-- Gerado via JavaScript -->
+            <!-- Alternativas injetadas via JS -->
           </div>
 
-          <!-- Mensagem de Feedback -->
           <div id="game-feedback" class="hidden mt-4 p-3 rounded-xl text-xs font-semibold flex items-start gap-2.5">
             <i id="game-feedback-icon" data-lucide="check-circle" class="w-5 h-5 flex-shrink-0"></i>
             <div class="flex-1">
               <p id="game-feedback-text" class="leading-relaxed"></p>
               <button id="game-next-btn" onclick="nextQuestion()" class="mt-2.5 px-3 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-bold hover:bg-slate-200 transition shadow">
-                Próxima Pergunta →
+                Próxima Questão →
               </button>
             </div>
           </div>
 
         </div>
 
-        <!-- Card de Conquista Final (Oculto inicialmente) -->
+        <!-- Tela de Conclusão do Quiz -->
         <div id="game-finish-card" class="hidden glass-card p-6 rounded-2xl border border-emerald-500/30 text-center">
           <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center mb-3">
             <i data-lucide="award" class="w-8 h-8"></i>
           </div>
-          <h3 class="text-lg font-bold text-white">Parabéns, Mestre dos Poliedros!</h3>
-          <p id="game-final-msg" class="text-xs text-slate-300 mt-1">Você concluiu todos os desafios com maestria.</p>
+          <h3 class="text-lg font-bold text-white">Excelente! Missões Concluídas!</h3>
+          <p class="text-xs text-slate-300 mt-1">Você dominou o cálculo de arestas, sólidos de Platão e a relação de Euler.</p>
           <div class="my-4 py-2 px-4 rounded-xl bg-slate-900 border border-slate-800 inline-block font-mono-num text-xl font-bold text-emerald-400">
-            Pontuação: <span id="game-final-score">1000</span> pts
+            Pontuação: <span id="game-final-score">0</span> pts
           </div>
           <div>
             <button onclick="restartGame()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg transition flex items-center gap-2 mx-auto">
               <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-              Jogar Novamente
+              Refazer Missões
             </button>
           </div>
         </div>
       </div>
 
-      <!-- MODO 3: DETETIVE DE EULER (Mini-game Contra o Relógio) -->
+      <!-- MODO 3: DETETIVE DE EULER (CÁLCULO RÁPIDO) -->
       <div id="mode-speed" class="hidden space-y-4">
         <div class="glass-card p-5 rounded-2xl border border-amber-500/30 shadow-xl bg-gradient-to-b from-amber-950/20 to-slate-900">
           
@@ -402,10 +364,9 @@
           </div>
 
           <p class="text-xs text-slate-300 mt-3 leading-relaxed">
-            Descubra o elemento que falta para satisfazer a equação <strong class="text-amber-300 font-mono-num">V - A + F = 2</strong> o mais rápido possível!
+            Descubra o elemento que falta (<strong class="text-amber-300 font-mono-num">?</strong>) para satisfazer <strong class="text-amber-300 font-mono-num">V - A + F = 2</strong>!
           </p>
 
-          <!-- Painel da Equação com a incógnita "?" -->
           <div id="speed-equation-box" class="my-4 p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-around font-mono-num text-lg font-bold">
             <div class="text-center">
               <span class="text-[10px] block text-slate-500 uppercase font-sans">Vértices</span>
@@ -428,79 +389,55 @@
             </div>
           </div>
 
-          <!-- Botões de Opção Rápida -->
-          <div id="speed-options-grid" class="grid grid-cols-2 gap-2.5">
-            <!-- Gerado via JS -->
-          </div>
+          <div id="speed-options-grid" class="grid grid-cols-2 gap-2.5"></div>
 
-          <!-- Feedback Rápido -->
           <div id="speed-feedback" class="mt-3 text-center text-xs font-semibold h-4 text-transparent transition-all">
             +50 pts!
           </div>
 
-          <!-- Botão Iniciar / Reiniciar -->
           <button id="speed-start-btn" onclick="startSpeedGame()" class="w-full mt-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold text-xs rounded-xl transition shadow-lg flex items-center justify-center gap-2">
             <i data-lucide="play" class="w-4 h-4"></i>
-            <span>Começar Desafio Contra o Tempo</span>
+            <span>Iniciar Desafio (30 segundos)</span>
           </button>
         </div>
       </div>
 
-      <!-- MODO 4: GUIA TEÓRICO RESUMIDO -->
+      <!-- MODO 4: GUIA TEÓRICO -->
       <div id="mode-theory" class="hidden space-y-4">
         <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-4 text-xs leading-relaxed text-slate-300">
           <div>
             <h3 class="font-bold text-white text-sm flex items-center gap-2 mb-1.5 text-indigo-400">
-              <i data-lucide="box" class="w-4 h-4"></i>
-              O que é um Poliedro?
-            </h3>
-            <p>
-              É um sólido geométrico tridimensional limitado por <strong>polígonos planos</strong> chamados de <strong>faces</strong>. Os lados desses polígonos são as <strong>arestas</strong>, e os pontos de encontro das arestas são os <strong>vértices</strong>.
-            </p>
-          </div>
-
-          <div class="border-t border-slate-800 pt-3">
-            <h3 class="font-bold text-white text-sm flex items-center gap-2 mb-1.5 text-amber-400">
               <i data-lucide="sparkles" class="w-4 h-4"></i>
-              A Famosa Relação de Euler
+              Como calcular o número de Arestas?
             </h3>
-            <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl my-2 text-center">
-              <span class="text-lg font-bold font-mono-num text-amber-300 tracking-wider">V - A + F = 2</span>
-            </div>
-            <p>
-              Válida para todo poliedro <em>convexo</em> fechado sem furos. Um macete mnemônico muito adorado por alunos em sala de aula é:
-              <br><strong class="text-slate-100">"Vamos Fazer Dois Amigos" $\rightarrow$ V + F = A + 2</strong>.
+            <p class="mb-2">
+              Dependendo dos dados do exercício, use um destes caminhos:
             </p>
-          </div>
-
-          <div class="border-t border-slate-800 pt-3">
-            <h3 class="font-bold text-white text-sm flex items-center gap-2 mb-1.5 text-cyan-400">
-              <i data-lucide="calculator" class="w-4 h-4"></i>
-              Contagem de Arestas Compartilhadas
-            </h3>
-            <p>
-              Como cada aresta é o encontro exato de <strong>2 faces</strong>, se somarmos os lados de todas as faces de um sólido, contamos cada aresta duas vezes:
-            </p>
-            <div class="p-2.5 bg-slate-900 border border-slate-800 rounded-lg my-1.5 font-mono-num text-[11px] text-cyan-300 text-center">
-              2A = (Faces Triangulares × 3) + (Faces Quadradas × 4) + ...
+            <div class="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-2">
+              <div>
+                <span class="font-bold text-indigo-300 block">1. Pela Relação de Euler (sabendo V e F):</span>
+                <span class="font-mono-num text-sm text-indigo-200">A = V + F - 2</span>
+              </div>
+              <div class="border-t border-indigo-500/20 pt-2">
+                <span class="font-bold text-cyan-300 block">2. Pelas Faces (arestas compartilhadas):</span>
+                <span class="font-mono-num text-xs text-cyan-200">2A = (3 × Faces Triangulares) + (4 × Faces Quadradas) + ...</span>
+              </div>
             </div>
           </div>
 
           <div class="border-t border-slate-800 pt-3">
             <h3 class="font-bold text-white text-sm flex items-center gap-2 mb-1.5 text-emerald-400">
               <i data-lucide="award" class="w-4 h-4"></i>
-              Os 5 Poliedros de Platão
+              Critérios para ser Poliedro de Platão
             </h3>
-            <p class="mb-2">
-              São os únicos 5 poliedros convexos e regulares (todas as faces idênticas e mesmo número de arestas por vértice):
-            </p>
-            <ul class="space-y-1 list-disc list-inside font-mono-num text-[11px] text-slate-300">
-              <li><strong>Tetraedro:</strong> 4 faces triangulares (V=4, A=6, F=4)</li>
-              <li><strong>Hexaedro (Cubo):</strong> 6 faces quadradas (V=8, A=12, F=6)</li>
-              <li><strong>Octaedro:</strong> 8 faces triangulares (V=6, A=12, F=8)</li>
-              <li><strong>Dodecaedro:</strong> 12 faces pentagonais (V=20, A=30, F=12)</li>
-              <li><strong>Icosaedro:</strong> 20 faces triangulares (V=12, A=30, F=20)</li>
+            <ul class="space-y-1 list-disc list-inside font-semibold text-slate-200">
+              <li>Ser convexo e satisfazer a relação de Euler: $V - A + F = 2$.</li>
+              <li>Todas as faces devem ter o mesmo número de lados.</li>
+              <li>De todos os vértices deve partir exatamente o mesmo número de arestas.</li>
             </ul>
+            <div class="mt-2.5 p-2 bg-slate-900 border border-slate-800 rounded-lg font-mono-num text-[11px] text-amber-300">
+              Existem apenas 5: Tetraedro, Cubo, Octaedro, Dodecaedro e Icosaedro!
+            </div>
           </div>
         </div>
       </div>
@@ -509,73 +446,56 @@
 
   </main>
 
-  <!-- Rodapé com Resumo Didático -->
   <footer class="mt-auto border-t border-slate-800/80 bg-slate-950/80 py-4 px-4 text-center text-xs text-slate-500">
-    PoliLab 3D • Desenvolvido para o Ensino Fundamental & Médio com Three.js e Gamificação Pedagógica
+    PoliLab 3D • Ferramenta Didática de Geometria Espacial para o Ensino Fundamental e Médio
   </footer>
 
-  <!-- SCRIPT COMPLETO DA APLICAÇÃO -->
+  <!-- SCRIPT THREE.JS E LÓGICA COMPLETA -->
   <script>
-    /* ==========================================================================
-       0. EFEITOS SONOROS (WEB AUDIO API - ZERO DEPENDÊNCIAS EXTERNAS)
-       ========================================================================== */
+    /* --------------------------------------------------------------------------
+       1. ÁUDIO SINTETIZADO (Web Audio API)
+       -------------------------------------------------------------------------- */
     let audioEnabled = true;
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
     function playBeep(type = 'success') {
       if (!audioEnabled) return;
       try {
-        if (!audioCtx) audioCtx = new AudioContextClass();
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!audioCtx) audioCtx = new AudioCtx();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-
         const now = audioCtx.currentTime;
 
         if (type === 'success') {
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(523.25, now); // C5
-          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15);
           gain.gain.setValueAtTime(0.2, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
           osc.start(now);
-          osc.stop(now + 0.3);
+          osc.stop(now + 0.25);
         } else if (type === 'error') {
           osc.type = 'sawtooth';
           osc.frequency.setValueAtTime(260, now);
-          osc.frequency.setValueAtTime(190, now + 0.1);
+          osc.frequency.setValueAtTime(180, now + 0.1);
           gain.gain.setValueAtTime(0.2, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
           osc.start(now);
-          osc.stop(now + 0.3);
+          osc.stop(now + 0.25);
         } else if (type === 'click') {
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(600, now);
-          gain.gain.setValueAtTime(0.1, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+          osc.frequency.setValueAtTime(650, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
           osc.start(now);
-          osc.stop(now + 0.08);
-        } else if (type === 'win') {
-          // Pequena fanfarra em acorde
-          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.connect(g);
-            g.connect(audioCtx.destination);
-            o.frequency.value = freq;
-            g.gain.setValueAtTime(0.15, now + i * 0.08);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
-            o.start(now + i * 0.08);
-            o.stop(now + i * 0.08 + 0.35);
-          });
+          osc.stop(now + 0.07);
         }
-      } catch (err) {
-        console.warn('Áudio não suportado ou bloqueado pelo navegador');
-      }
+      } catch (e) {}
     }
 
     function toggleAudioMute() {
@@ -592,383 +512,210 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    /* ==========================================================================
-       1. BANCO DE DADOS DOS POLIEDROS
-       ========================================================================== */
+    /* --------------------------------------------------------------------------
+       2. DEFINIÇÃO GEOMÉTRICA DOS POLIEDROS
+       -------------------------------------------------------------------------- */
     const SOLIDS_DATA = {
       tetrahedron: {
         id: 'tetrahedron',
         name: 'Tetraedro Regular',
         tag: 'Platão',
         v: 4, a: 6, f: 4,
-        desc: 'Possui 4 faces que são triângulos equiláteros idênticos. É a pirâmide triangular regular.',
+        desc: 'Composto por 4 faces triangulares equiláteras. É uma pirâmide regular de base triangular.',
         faceType: 'Triângulos Equiláteros (4)',
-        vertOrder: '3 arestas / triângulos por vértice',
-        color: 0x6366f1, // Indigo
-        createMesh: () => new THREE.TetrahedronGeometry(2.4, 0)
+        vertOrder: '3 arestas por vértice',
+        color: 0x6366f1,
+        createGeometry: () => new THREE.TetrahedronGeometry(2.3, 0)
       },
       cube: {
         id: 'cube',
         name: 'Hexaedro (Cubo)',
         tag: 'Platão',
         v: 8, a: 12, f: 6,
-        desc: 'Possui 6 faces quadradas congruentes e 12 arestas de mesmo comprimento.',
+        desc: 'Possui 6 faces quadradas idênticas e 12 arestas de igual comprimento.',
         faceType: 'Quadrados Congruentes (6)',
-        vertOrder: '3 arestas / quadrados por vértice',
-        color: 0x06b6d4, // Cyan
-        createMesh: () => new THREE.BoxGeometry(2.7, 2.7, 2.7)
+        vertOrder: '3 arestas por vértice',
+        color: 0x06b6d4,
+        createGeometry: () => new THREE.BoxGeometry(2.6, 2.6, 2.6)
       },
       octahedron: {
         id: 'octahedron',
         name: 'Octaedro Regular',
         tag: 'Platão',
         v: 6, a: 12, f: 8,
-        desc: 'Composto por 8 faces triangulares equiláteras. Pode ser visualizado como duas pirâmides de base quadrada unidas pela base.',
+        desc: 'Formado por 8 faces triangulares equiláteras. Parece duas pirâmides de base quadrada coladas pela base.',
         faceType: 'Triângulos Equiláteros (8)',
-        vertOrder: '4 arestas / triângulos por vértice',
-        color: 0x10b981, // Emerald
-        createMesh: () => new THREE.OctahedronGeometry(2.5, 0)
+        vertOrder: '4 arestas por vértice',
+        color: 0x10b981,
+        createGeometry: () => new THREE.OctahedronGeometry(2.4, 0)
       },
       dodecahedron: {
         id: 'dodecahedron',
         name: 'Dodecaedro Regular',
         tag: 'Platão',
         v: 20, a: 30, f: 12,
-        desc: 'Possui 12 faces que são pentágonos regulares congruentes. Um dos mais harmônicos sólidos platônicos.',
+        desc: 'Composto por 12 faces pentagonais regulares congruentes.',
         faceType: 'Pentágonos Regulares (12)',
-        vertOrder: '3 arestas / pentágonos por vértice',
-        color: 0xf59e0b, // Amber
-        createMesh: () => new THREE.DodecahedronGeometry(2.3, 0)
+        vertOrder: '3 arestas por vértice',
+        color: 0xf59e0b,
+        createGeometry: () => new THREE.DodecahedronGeometry(2.3, 0)
       },
       icosahedron: {
         id: 'icosahedron',
         name: 'Icosaedro Regular',
         tag: 'Platão',
         v: 12, a: 30, f: 20,
-        desc: 'Formado por 20 faces triangulares equiláteras congruentes. É o sólido platônico com maior número de faces.',
+        desc: 'Possui 20 faces triangulares equiláteras. É o sólido platônico com maior número de faces.',
         faceType: 'Triângulos Equiláteros (20)',
-        vertOrder: '5 arestas / triângulos por vértice',
-        color: 0xec4899, // Pink
-        createMesh: () => new THREE.IcosahedronGeometry(2.4, 0)
+        vertOrder: '5 arestas por vértice',
+        color: 0xec4899,
+        createGeometry: () => new THREE.IcosahedronGeometry(2.4, 0)
       },
       sqpyramid: {
         id: 'sqpyramid',
         name: 'Pirâmide de Base Quadrada',
         tag: 'Pirâmide',
         v: 5, a: 8, f: 5,
-        desc: 'Tem 1 face quadrada na base e 4 faces triangulares nas laterais convergindo para o ápice.',
+        desc: 'Tem 1 face quadrada na base e 4 faces triangulares nas laterais convergindo no ápice.',
         faceType: '1 Quadrado (base) + 4 Triângulos',
-        vertOrder: '4 na base (3 arestas) e 1 no ápice (4 arestas)',
-        color: 0xf97316, // Laranja
-        createMesh: () => new THREE.ConeGeometry(2.2, 3.0, 4)
+        vertOrder: '4 na base (3 arestas) e 1 no topo (4 arestas)',
+        color: 0xf97316,
+        createGeometry: () => new THREE.ConeGeometry(2.2, 3.0, 4)
       },
       pentapyramid: {
         id: 'pentapyramid',
         name: 'Pirâmide Pentagonal',
         tag: 'Pirâmide',
         v: 6, a: 10, f: 6,
-        desc: 'Tem 1 base pentagonal (5 lados) e 5 faces triangulares que sobem até o vértice comum.',
+        desc: 'Possui 1 base pentagonal (5 lados) e 5 faces triangulares laterais.',
         faceType: '1 Pentágono + 5 Triângulos',
-        vertOrder: '5 na base + 1 no ápice',
-        color: 0xf43f5e, // Rose
-        createMesh: () => new THREE.ConeGeometry(2.2, 3.0, 5)
+        vertOrder: '5 na base (3 arestas) e 1 no ápice (5 arestas)',
+        color: 0xf43f5e,
+        createGeometry: () => new THREE.ConeGeometry(2.2, 3.0, 5)
       },
       triprism: {
         id: 'triprism',
         name: 'Prisma Triangular Reto',
         tag: 'Prisma',
         v: 6, a: 9, f: 5,
-        desc: 'Tem 2 bases triangulares paralelas e 3 faces laterais retangulares conectando-as.',
+        desc: 'Possui 2 bases triangulares paralelas e 3 faces laterais retangulares.',
         faceType: '2 Triângulos + 3 Retângulos',
         vertOrder: '3 arestas por vértice',
-        color: 0x14b8a6, // Teal
-        createMesh: () => new THREE.CylinderGeometry(1.8, 1.8, 2.8, 3)
+        color: 0x14b8a6,
+        createGeometry: () => new THREE.CylinderGeometry(1.8, 1.8, 2.8, 3)
       },
       hexaprism: {
         id: 'hexaprism',
         name: 'Prisma Hexagonal Reto',
         tag: 'Prisma',
         v: 12, a: 18, f: 8,
-        desc: 'Tem 2 bases hexagonais (6 lados) e 6 faces retangulares laterais.',
+        desc: 'Possui 2 bases em formato de hexágono (6 lados) e 6 faces laterais retangulares.',
         faceType: '2 Hexágonos + 6 Retângulos',
         vertOrder: '3 arestas por vértice',
-        color: 0xa855f7, // Purple
-        createMesh: () => new THREE.CylinderGeometry(2.0, 2.0, 2.8, 6)
+        color: 0xa855f7,
+        createGeometry: () => new THREE.CylinderGeometry(2.0, 2.0, 2.8, 6)
       }
     };
 
-    /* ==========================================================================
-       2. BANCO DE QUESTÕES DO JOGO (10 MISSÕES DIDÁTICAS)
-       ========================================================================== */
-    const GAME_QUESTIONS = [
-      {
-        type: 'Relação de Euler',
-        solidPreview: 'octahedron',
-        question: 'Um octaedro possui 6 vértices (V = 6) e 8 faces (F = 8). Pela Relação de Euler (V - A + F = 2), quantas arestas ele possui?',
-        hint: 'Use a fórmula: A = V + F - 2. Substitua os valores: A = 6 + 8 - 2.',
-        options: [
-          { text: '10 arestas', correct: false },
-          { text: '12 arestas', correct: true },
-          { text: '14 arestas', correct: false },
-          { text: '16 arestas', correct: false }
-        ],
-        explanation: 'Correto! 6 - 12 + 8 = 2. O octaedro regular possui exatamente 12 arestas.'
-      },
-      {
-        type: 'Nomenclatura',
-        solidPreview: 'dodecahedron',
-        question: 'Qual é o nome do poliedro regular de Platão que possui exatamente 12 faces pentagonais?',
-        hint: 'O prefixo grego "Dodeca-" significa doze.',
-        options: [
-          { text: 'Icosaedro', correct: false },
-          { text: 'Decaedro', correct: false },
-          { text: 'Dodecaedro', correct: true },
-          { text: 'Hexaedro', correct: false }
-        ],
-        explanation: 'Excelente! Dodecaedro vem de "dodeka" (12) + "hedra" (faces/assentos).'
-      },
-      {
-        type: 'Conceito Fundamental',
-        solidPreview: 'cube',
-        question: 'No cubo (hexaedro), cada um dos cantos pontiagudos onde três arestas se encontram é chamado geometricamente de:',
-        hint: 'São os pontos de encontro entre as linhas.',
-        options: [
-          { text: 'Face', correct: false },
-          { text: 'Vértice', correct: true },
-          { text: 'Apótema', correct: false },
-          { text: 'Geratriz', correct: false }
-        ],
-        explanation: 'Isso mesmo! O cubo possui 8 vértices, que são os pontos de interseção das arestas.'
-      },
-      {
-        type: 'Relação de Euler',
-        solidPreview: 'dodecahedron',
-        question: 'O Dodecaedro regular possui 20 vértices e 30 arestas. Quantas faces ele tem segundo a fórmula V + F = A + 2?',
-        hint: 'Substitua: 20 + F = 30 + 2 -> 20 + F = 32.',
-        options: [
-          { text: '10 faces', correct: false },
-          { text: '12 faces', correct: true },
-          { text: '18 faces', correct: false },
-          { text: '20 faces', correct: false }
-        ],
-        explanation: 'Perfeito! 20 + 12 = 30 + 2. O dodecaedro tem 12 faces pentagonais.'
-      },
-      {
-        type: 'Pirâmides',
-        solidPreview: 'sqpyramid',
-        question: 'Uma pirâmide possui base com formato de um polígono de 7 lados (heptágono). Quantos vértices terá essa pirâmide no total?',
-        hint: 'Toda pirâmide possui os vértices da base mais 1 único vértice superior (o ápice): V = n + 1.',
-        options: [
-          { text: '7 vértices', correct: false },
-          { text: '8 vértices', correct: true },
-          { text: '14 vértices', correct: false },
-          { text: '9 vértices', correct: false }
-        ],
-        explanation: 'Muito bem! Em qualquer pirâmide de base com n lados, temos n vértices na base + 1 no ápice = 8 vértices.'
-      },
-      {
-        type: 'Poliedros de Platão',
-        solidPreview: 'icosahedron',
-        question: 'Qual poliedro de Platão é formado por 20 faces que são triângulos equiláteros?',
-        hint: 'O prefixo "Icosa-" significa vinte.',
-        options: [
-          { text: 'Icosaedro', correct: true },
-          { text: 'Octaedro', correct: false },
-          { text: 'Tetraedro', correct: false },
-          { text: 'Dodecaedro', correct: false }
-        ],
-        explanation: 'Exato! O icosaedro regular tem 20 faces triangulares, 12 vértices e 30 arestas.'
-      },
-      {
-        type: 'Prismas',
-        solidPreview: 'triprism',
-        question: 'Um prisma triangular reto possui 2 bases triangulares e 3 faces laterais retangulares. Qual é a contagem de (V, A, F)?',
-        hint: 'Conte os pontos dos 2 triângulos (3+3), as arestas (3 na base superior, 3 na inferior, 3 laterais) e as 5 faces.',
-        options: [
-          { text: 'V = 6, A = 9, F = 5', correct: true },
-          { text: 'V = 5, A = 8, F = 5', correct: false },
-          { text: 'V = 6, A = 8, F = 6', correct: false },
-          { text: 'V = 8, A = 12, F = 6', correct: false }
-        ],
-        explanation: 'Excelente! No prisma triangular: V = 6, A = 9, F = 5. Aplicando Euler: 6 - 9 + 5 = 2!'
-      },
-      {
-        type: 'Contagem Avançada de Arestas',
-        solidPreview: 'cube',
-        question: 'Um poliedro convexo tem 10 faces quadradas e 4 faces triangulares. Sabendo que cada aresta pertence a 2 faces, quantas arestas ele possui?',
-        hint: 'Some o total de lados de todas as faces: (10 × 4) + (4 × 3) = 40 + 12 = 52. Como cada aresta pertence a 2 faces, divida por 2!',
-        options: [
-          { text: '24 arestas', correct: false },
-          { text: '26 arestas', correct: true },
-          { text: '52 arestas', correct: false },
-          { text: '28 arestas', correct: false }
-        ],
-        explanation: 'Incrível! 2A = (10 × 4) + (4 × 3) = 52 -> A = 26 arestas. Esse é um raciocínio clássico em provas e vestibulares!'
-      },
-      {
-        type: 'Prismas Regulares',
-        solidPreview: 'hexaprism',
-        question: 'Em um prisma hexagonal (base com 6 lados), quantas faces, vértices e arestas existem, respectivamente?',
-        hint: 'Faces = 2 bases + 6 laterais = 8. Vértices = 6 em cima + 6 embaixo = 12. Arestas = 6 em cima + 6 embaixo + 6 laterais = 18.',
-        options: [
-          { text: 'F = 8, V = 12, A = 18', correct: true },
-          { text: 'F = 6, V = 12, A = 16', correct: false },
-          { text: 'F = 8, V = 8, A = 14', correct: false },
-          { text: 'F = 12, V = 18, A = 24', correct: false }
-        ],
-        explanation: 'Perfeito! No prisma de n lados: F = n + 2, V = 2n, A = 3n. Para n = 6: F = 8, V = 12, A = 18. E confere Euler: 12 - 18 + 8 = 2!'
-      },
-      {
-        type: 'Euler Invertido',
-        solidPreview: 'tetrahedron',
-        question: 'Um poliedro convexo possui 14 arestas e 9 vértices. Quantas faces esse poliedro possui?',
-        hint: 'Pela relação V - A + F = 2: 9 - 14 + F = 2 -> -5 + F = 2 -> F = 2 + 5.',
-        options: [
-          { text: '5 faces', correct: false },
-          { text: '6 faces', correct: false },
-          { text: '7 faces', correct: true },
-          { text: '8 faces', correct: false }
-        ],
-        explanation: 'Show! V - A + F = 2 -> 9 - 14 + F = 2 -> F = 7 faces (um heptaedro)!'
-      }
-    ];
-
-    /* ==========================================================================
-       3. AMBIENTE 3D (THREE.JS)
-       ========================================================================== */
+    /* --------------------------------------------------------------------------
+       3. ENGINE THREE.JS COM RENDERIZAÇÃO GARANTIDA
+       -------------------------------------------------------------------------- */
     let scene, camera, renderer;
     let solidMesh = null;
     let wireframeMesh = null;
     let verticesPoints = null;
-    let currentSolidKey = 'tetrahedron';
     let autoRotate = true;
     let showEdges = true;
     let showVertices = true;
     let showFaces = true;
 
-    let isDragging = false;
-    let previousMousePosition = { x: 0, y: 0 };
-    const container = document.getElementById('three-container');
+    let isPointerDown = false;
+    let previousPointerPos = { x: 0, y: 0 };
 
     function init3D() {
-      const containerEl = document.getElementById('three-container');
-      if (!containerEl) return;
+      const container = document.getElementById('three-canvas-root');
+      if (!container) return;
 
-      // Garantir dimensões válidas mesmo se carregado com delay
-      const width = containerEl.clientWidth || 600;
-      const height = containerEl.clientHeight || 450;
+      const rect = container.getBoundingClientRect();
+      const width = rect.width > 20 ? rect.width : 500;
+      const height = rect.height > 20 ? rect.height : 450;
 
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x090d16);
+      scene.background = new THREE.Color(0x070b14);
 
-      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
       camera.position.set(0, 0, 7.5);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-      renderer.setSize(width, height);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      
-      // Limpar resíduos caso re-inicialize
-      containerEl.innerHTML = '';
-      containerEl.appendChild(renderer.domElement);
+      renderer.setSize(width, height);
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
 
-      // Luz ambiente reforçada para garantir visibilidade
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      // Luzes intensas para visualização clara
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
-      // Luz direcional principal frontal/superior
-      const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.9);
-      dirLight1.position.set(6, 8, 6);
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.0);
+      dirLight1.position.set(8, 10, 8);
       scene.add(dirLight1);
 
-      // Luz direcional de preenchimento oposta
-      const dirLight2 = new THREE.DirectionalLight(0xa5b4fc, 0.6);
-      dirLight2.position.set(-6, -6, -4);
+      const dirLight2 = new THREE.DirectionalLight(0x818cf8, 0.8);
+      dirLight2.position.set(-8, -6, -4);
       scene.add(dirLight2);
 
-      loadSolid('tetrahedron');
-      setupInputListeners();
-      window.addEventListener('resize', onWindowResize);
+      setupInteractions(container);
+      loadSolid('octahedron');
+
+      // Observador de Redimensionamento automático
+      const resizeObserver = new ResizeObserver(() => handleResize());
+      resizeObserver.observe(container);
+
       animate();
     }
 
-    function setupInputListeners() {
-      const containerEl = document.getElementById('three-container');
-      if (!containerEl) return;
-
-      // Mouse Events
-      containerEl.addEventListener('mousedown', (e) => {
-        isDragging = true;
+    function setupInteractions(container) {
+      // Mouse e Touch unificados
+      const onDown = (clientX, clientY) => {
+        isPointerDown = true;
         autoRotate = false;
         updateRotateLabel();
-        previousMousePosition = { x: e.clientX, y: e.clientY };
-      });
+        previousPointerPos = { x: clientX, y: clientY };
+      };
 
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging || !solidMesh) return;
-        const deltaX = e.clientX - previousMousePosition.x;
-        const deltaY = e.clientY - previousMousePosition.y;
-
+      const onMove = (clientX, clientY) => {
+        if (!isPointerDown || !solidMesh) return;
+        const deltaX = clientX - previousPointerPos.x;
+        const deltaY = clientY - previousPointerPos.y;
         solidMesh.rotation.y += deltaX * 0.01;
         solidMesh.rotation.x += deltaY * 0.01;
+        previousPointerPos = { x: clientX, y: clientY };
+      };
 
-        previousMousePosition = { x: e.clientX, y: e.clientY };
-      });
+      const onUp = () => { isPointerDown = false; };
 
-      window.addEventListener('mouseup', () => {
-        isDragging = false;
-      });
+      container.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', onUp);
 
-      // Zoom via Scroll
-      containerEl.addEventListener('wheel', (e) => {
+      container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) onDown(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+
+      container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+
+      container.addEventListener('touchend', onUp);
+
+      container.addEventListener('wheel', (e) => {
         e.preventDefault();
         camera.position.z += e.deltaY * 0.005;
-        camera.position.z = Math.min(Math.max(camera.position.z, 3.5), 15.0);
+        camera.position.z = Math.min(Math.max(camera.position.z, 3.2), 13.0);
       }, { passive: false });
-
-      // Touch Events para Tablets e Celulares
-      let touchStartDist = 0;
-      containerEl.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          isDragging = true;
-          autoRotate = false;
-          updateRotateLabel();
-          previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        } else if (e.touches.length === 2) {
-          touchStartDist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-          );
-        }
-      }, { passive: true });
-
-      containerEl.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1 && isDragging && solidMesh) {
-          const deltaX = e.touches[0].clientX - previousMousePosition.x;
-          const deltaY = e.touches[0].clientY - previousMousePosition.y;
-
-          solidMesh.rotation.y += deltaX * 0.012;
-          solidMesh.rotation.x += deltaY * 0.012;
-
-          previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        } else if (e.touches.length === 2) {
-          const dist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-          );
-          const factor = (touchStartDist - dist) * 0.01;
-          camera.position.z = Math.min(Math.max(camera.position.z + factor, 3.5), 15.0);
-          touchStartDist = dist;
-        }
-      }, { passive: true });
-
-      containerEl.addEventListener('touchend', () => {
-        isDragging = false;
-      });
     }
 
     function loadSolid(solidKey) {
-      currentSolidKey = solidKey;
       const data = SOLIDS_DATA[solidKey];
       if (!data || !scene) return;
 
@@ -977,33 +724,33 @@
         if (solidMesh.geometry) solidMesh.geometry.dispose();
       }
 
-      const geom = data.createMesh();
+      const geom = data.createGeometry();
 
-      const material = new THREE.MeshPhongMaterial({
+      // Material com emissividade para garantir luminosidade mesmo se faltar iluminação
+      const material = new THREE.MeshStandardMaterial({
         color: data.color,
+        roughness: 0.25,
+        metalness: 0.15,
         transparent: true,
-        opacity: showFaces ? 0.88 : 0.08,
-        shininess: 80,
-        flatShading: true,
-        side: THREE.DoubleSide
+        opacity: showFaces ? 0.90 : 0.08,
+        side: THREE.DoubleSide,
+        flatShading: true
       });
 
       solidMesh = new THREE.Mesh(geom, material);
 
-      // Arestas nítidas
-      const edgesGeom = new THREE.EdgesGeometry(geom, 15);
-      const wireframeMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
-      wireframeMesh = new THREE.LineSegments(edgesGeom, wireframeMat);
+      // Arestas destacadas
+      const edgesGeom = new THREE.EdgesGeometry(geom, 12);
+      const wireMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+      wireframeMesh = new THREE.LineSegments(edgesGeom, wireMat);
       wireframeMesh.visible = showEdges;
       solidMesh.add(wireframeMesh);
 
-      // Extração robusta dos vértices únicos
-      const vertGeom = new THREE.BufferGeometry();
+      // Vértices destacados
       const posAttr = geom.getAttribute('position');
-      const uniqueVertices = [];
-      const threshold = 0.05;
-
       if (posAttr) {
+        const uniqueVertices = [];
+        const threshold = 0.05;
         for (let i = 0; i < posAttr.count; i++) {
           const v = new THREE.Vector3().fromBufferAttribute(posAttr, i);
           let exists = false;
@@ -1016,28 +763,28 @@
           if (!exists) uniqueVertices.push(v);
         }
 
-        const pointsArray = [];
-        uniqueVertices.forEach(v => pointsArray.push(v.x, v.y, v.z));
-        vertGeom.setAttribute('position', new THREE.Float32BufferAttribute(pointsArray, 3));
+        const pts = [];
+        uniqueVertices.forEach(v => pts.push(v.x, v.y, v.z));
+        const ptsGeom = new THREE.BufferGeometry();
+        ptsGeom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
 
-        const pointsMat = new THREE.PointsMaterial({
+        const ptsMat = new THREE.PointsMaterial({
           color: 0x34d399,
-          size: 0.32,
+          size: 0.35,
           sizeAttenuation: true
         });
-        verticesPoints = new THREE.Points(vertGeom, pointsMat);
+        verticesPoints = new THREE.Points(ptsGeom, ptsMat);
         verticesPoints.visible = showVertices;
         solidMesh.add(verticesPoints);
       }
 
-      solidMesh.rotation.x = 0.45;
-      solidMesh.rotation.y = 0.45;
-
+      solidMesh.rotation.set(0.4, 0.4, 0);
       scene.add(solidMesh);
-      updateUIWithSolid(data);
+
+      updateSolidCards(data);
     }
 
-    function updateUIWithSolid(data) {
+    function updateSolidCards(data) {
       document.getElementById('canvas-solid-name').innerText = data.name;
       document.getElementById('canvas-solid-class').innerText = `${data.tag} • V:${data.v} A:${data.a} F:${data.f}`;
       document.getElementById('stat-v').innerText = data.v;
@@ -1046,14 +793,12 @@
       document.getElementById('stat-euler-calc').innerText = `${data.v} - ${data.a} + ${data.f} =`;
       document.getElementById('stat-euler-result').innerText = (data.v - data.a + data.f);
 
-      // Painel Informativo
       document.getElementById('info-solid-title').innerText = data.name;
       document.getElementById('info-solid-tag').innerText = data.tag;
       document.getElementById('info-solid-desc').innerText = data.desc;
       document.getElementById('info-face-type').innerText = data.faceType;
       document.getElementById('info-vert-order').innerText = data.vertOrder;
 
-      // Realçar botão ativo
       document.querySelectorAll('.solid-select-btn').forEach(btn => {
         btn.classList.remove('border-indigo-500', 'bg-indigo-600/25', 'text-indigo-300');
         btn.classList.add('border-slate-700/60', 'bg-slate-800/40', 'text-slate-300');
@@ -1070,23 +815,18 @@
       if (type === 'wireframe') {
         showEdges = !showEdges;
         if (wireframeMesh) wireframeMesh.visible = showEdges;
-        const btn = document.getElementById('btn-wireframe');
-        btn.classList.toggle('text-indigo-400', showEdges);
-        btn.classList.toggle('text-slate-500', !showEdges);
+        document.getElementById('btn-wireframe').classList.toggle('text-indigo-400', showEdges);
+        document.getElementById('btn-wireframe').classList.toggle('text-slate-500', !showEdges);
       } else if (type === 'vertices') {
         showVertices = !showVertices;
         if (verticesPoints) verticesPoints.visible = showVertices;
-        const btn = document.getElementById('btn-vertices');
-        btn.classList.toggle('text-emerald-400', showVertices);
-        btn.classList.toggle('text-slate-500', !showVertices);
+        document.getElementById('btn-vertices').classList.toggle('text-emerald-400', showVertices);
+        document.getElementById('btn-vertices').classList.toggle('text-slate-500', !showVertices);
       } else if (type === 'faces') {
         showFaces = !showFaces;
-        if (solidMesh) {
-          solidMesh.material.opacity = showFaces ? 0.84 : 0.08;
-        }
-        const btn = document.getElementById('btn-faces');
-        btn.classList.toggle('text-pink-400', showFaces);
-        btn.classList.toggle('text-slate-500', !showFaces);
+        if (solidMesh) solidMesh.material.opacity = showFaces ? 0.90 : 0.08;
+        document.getElementById('btn-faces').classList.toggle('text-pink-400', showFaces);
+        document.getElementById('btn-faces').classList.toggle('text-slate-500', !showFaces);
       }
     }
 
@@ -1098,7 +838,7 @@
 
     function updateRotateLabel() {
       const label = document.getElementById('rotate-label');
-      label.innerText = autoRotate ? 'Giro: ON' : 'Giro: OFF';
+      label.innerText = autoRotate ? 'Giro' : 'Pausado';
       document.getElementById('btn-autorotate').classList.toggle('text-amber-400', autoRotate);
       document.getElementById('btn-autorotate').classList.toggle('text-slate-500', !autoRotate);
     }
@@ -1106,29 +846,267 @@
     function resetCamera() {
       playBeep('click');
       camera.position.set(0, 0, 7.5);
-      if (solidMesh) {
-        solidMesh.rotation.set(0.45, 0.45, 0);
-      }
+      if (solidMesh) solidMesh.rotation.set(0.4, 0.4, 0);
     }
 
-    function onWindowResize() {
-      const containerEl = document.getElementById('three-container');
-      if (!containerEl || !renderer || !camera) return;
-      const width = containerEl.clientWidth || 300;
-      const height = containerEl.clientHeight || 300;
-      camera.aspect = width / height;
+    function handleResize() {
+      const container = document.getElementById('three-canvas-root');
+      if (!container || !renderer || !camera) return;
+      const rect = container.getBoundingClientRect();
+      const w = rect.width || 500;
+      const h = rect.height || 450;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
+      renderer.setSize(w, h);
     }
 
     function animate() {
       requestAnimationFrame(animate);
       if (autoRotate && solidMesh) {
-        solidMesh.rotation.y += 0.007;
+        solidMesh.rotation.y += 0.006;
         solidMesh.rotation.x += 0.003;
       }
       if (renderer && scene && camera) {
         renderer.render(scene, camera);
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       4. MISSÕES DIDÁTICAS DE SALA DE AULA
+       -------------------------------------------------------------------------- */
+    const GAME_QUESTIONS = [
+      {
+        type: 'Cálculo de Arestas (Euler)',
+        solidPreview: 'octahedron',
+        question: 'Um poliedro convexo possui 6 vértices (V = 6) e 8 faces (F = 8). Quantas arestas (A) ele possui?',
+        hint: 'Use a fórmula de Euler: V - A + F = 2. Reorganizando: A = V + F - 2.',
+        options: [
+          { text: '10 arestas', correct: false },
+          { text: '12 arestas', correct: true },
+          { text: '14 arestas', correct: false },
+          { text: '16 arestas', correct: false }
+        ],
+        explanation: 'Excelente! A = V + F - 2 = 6 + 8 - 2 = 12 arestas. É o caso exato do Octaedro!'
+      },
+      {
+        type: 'Identificação de Platão',
+        solidPreview: 'cube',
+        question: 'Assinale a alternativa que contém APENAS poliedros de Platão (regulares):',
+        hint: 'Lembre-se: existem apenas 5 sólidos de Platão (Tetraedro, Cubo, Octaedro, Dodecaedro e Icosaedro).',
+        options: [
+          { text: 'Cubo, Pirâmide Quadrada e Prisma Triangular', correct: false },
+          { text: 'Tetraedro, Cubo e Dodecaedro', correct: true },
+          { text: 'Octaedro, Prisma Hexagonal e Icosaedro', correct: false },
+          { text: 'Cilindro, Cone e Esfera', correct: false }
+        ],
+        explanation: 'Correto! Os únicos 5 poliedros de Platão são: Tetraedro, Hexaedro (Cubo), Octaedro, Dodecaedro e Icosaedro.'
+      },
+      {
+        type: 'Reconhecimento por Nomenclatura',
+        solidPreview: 'dodecahedron',
+        question: 'Qual poliedro regular de Platão possui exatamente 12 faces no formato de pentágonos regulares?',
+        hint: 'O prefixo grego "Dodeca-" significa doze.',
+        options: [
+          { text: 'Hexaedro', correct: false },
+          { text: 'Octaedro', correct: false },
+          { text: 'Dodecaedro', correct: true },
+          { text: 'Icosaedro', correct: false }
+        ],
+        explanation: 'Perfeito! Dodecaedro possui 12 faces pentagonais regulares (Dodeca = 12, hedro = face).'
+      },
+      {
+        type: 'Cálculo de Arestas por Faces',
+        solidPreview: 'cube',
+        question: 'Um poliedro é formado por 6 faces quadradas. Sabendo que cada aresta une 2 faces, quantas arestas ele tem?',
+        hint: 'Total de lados: 6 faces × 4 lados = 24. Como cada aresta pertence a 2 faces simultâneas, divida por 2.',
+        options: [
+          { text: '8 arestas', correct: false },
+          { text: '12 arestas', correct: true },
+          { text: '18 arestas', correct: false },
+          { text: '24 arestas', correct: false }
+        ],
+        explanation: 'Muito bem! 2A = 6 × 4 = 24 -> A = 12 arestas. É a contagem do cubo!'
+      },
+      {
+        type: 'Característica de Pirâmides',
+        solidPreview: 'sqpyramid',
+        question: 'Uma pirâmide possui como base um hexágono (polígono de 6 lados). Quantas arestas essa pirâmide tem no total?',
+        hint: 'Em qualquer pirâmide de base n-gonal, temos n arestas na base e n arestas que sobem ao vértice: A = 2n.',
+        options: [
+          { text: '6 arestas', correct: false },
+          { text: '8 arestas', correct: false },
+          { text: '12 arestas', correct: true },
+          { text: '18 arestas', correct: false }
+        ],
+        explanation: 'Correto! A = 2 × 6 = 12 arestas (6 na base poligonal e 6 arestas laterais).'
+      },
+      {
+        type: 'Formato das Faces',
+        solidPreview: 'icosahedron',
+        question: 'O Icosaedro Regular possui 20 faces congruentes. Qual é o polígono que forma as faces desse poliedro?',
+        hint: 'Observe a figura 3D ao lado: são polígonos regulares de 3 lados.',
+        options: [
+          { text: 'Triângulos Equiláteros', correct: true },
+          { text: 'Quadrados', correct: false },
+          { text: 'Pentágonos Regulares', correct: false },
+          { text: 'Hexágonos Regulares', correct: false }
+        ],
+        explanation: 'Exato! O Icosaedro regular tem 20 faces formadas por triângulos equiláteros congruentes.'
+      },
+      {
+        type: 'Cálculo de Arestas em Prismas',
+        solidPreview: 'triprism',
+        question: 'Um prisma reto possui 6 vértices (V = 6) e 5 faces (F = 5). Quantas arestas ele possui?',
+        hint: 'Aplique a relação de Euler: A = V + F - 2.',
+        options: [
+          { text: '7 arestas', correct: false },
+          { text: '8 arestas', correct: false },
+          { text: '9 arestas', correct: true },
+          { text: '10 arestas', correct: false }
+        ],
+        explanation: 'Correto! A = 6 + 5 - 2 = 9 arestas. Este é o prisma de base triangular!'
+      },
+      {
+        type: 'Condição de Platão',
+        solidPreview: 'sqpyramid',
+        question: 'Por que uma pirâmide de base quadrada comum NÃO é um poliedro de Platão?',
+        hint: 'Verifique se todas as faces do sólido são iguais entre si.',
+        options: [
+          { text: 'Porque ela não é tridimensional', correct: false },
+          { text: 'Porque suas faces não são todas iguais (tem 1 quadrado e 4 triângulos)', correct: true },
+          { text: 'Porque não respeita a relação de Euler', correct: false },
+          { text: 'Porque possui número ímpar de faces', correct: false }
+        ],
+        explanation: 'Muito bem! Nos sólidos de Platão, TODAS as faces devem ser exatamente o mesmo polígono regular.'
+      },
+      {
+        type: 'Identificação por Vértices',
+        solidPreview: 'octahedron',
+        question: 'Qual poliedro regular possui 6 vértices e 8 faces triangulares?',
+        hint: 'Pense em duas pirâmides de base quadrada unidas pela base.',
+        options: [
+          { text: 'Tetraedro', correct: false },
+          { text: 'Cubo', correct: false },
+          { text: 'Octaedro Regular', correct: true },
+          { text: 'Dodecaedro', correct: false }
+        ],
+        explanation: 'Show! O Octaedro regular tem 6 vértices, 8 faces triangulares e 12 arestas.'
+      },
+      {
+        type: 'Cálculo Invertido de Euler',
+        solidPreview: 'hexaprism',
+        question: 'Um poliedro possui 18 arestas e 8 faces. Quantos vértices (V) ele possui?',
+        hint: 'Isole os vértices na fórmula: V = A - F + 2.',
+        options: [
+          { text: '10 vértices', correct: false },
+          { text: '12 vértices', correct: true },
+          { text: '14 vértices', correct: false },
+          { text: '16 vértices', correct: false }
+        ],
+        explanation: 'Excelente! V = 18 - 8 + 2 = 12 vértices. É o caso do Prisma Hexagonal!'
+      }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let hasAnsweredCurrent = false;
+
+    function renderQuestion() {
+      hasAnsweredCurrent = false;
+      const q = GAME_QUESTIONS[currentQuestionIndex];
+
+      if (q.solidPreview && SOLIDS_DATA[q.solidPreview]) {
+        loadSolid(q.solidPreview);
+      }
+
+      document.getElementById('game-quest-num').innerText = `Exercício ${currentQuestionIndex + 1} de ${GAME_QUESTIONS.length}`;
+      document.getElementById('game-progress-bar').style.width = `${((currentQuestionIndex + 1) / GAME_QUESTIONS.length) * 100}%`;
+      document.getElementById('game-badge-type').innerText = q.type;
+      document.getElementById('game-question-text').innerText = q.question;
+      document.getElementById('game-hint-box').innerText = q.hint;
+      document.getElementById('game-hint-box').classList.add('hidden');
+      document.getElementById('hint-toggle-text').innerText = 'Ver Dica do Professor';
+      document.getElementById('game-feedback').classList.add('hidden');
+
+      const container = document.getElementById('game-options-container');
+      container.innerHTML = '';
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3 rounded-xl border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 hover:border-indigo-500/50 text-xs font-semibold text-slate-200 transition flex items-center gap-3";
+        btn.innerHTML = `
+          <span class="w-6 h-6 rounded-lg bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-xs flex-shrink-0">${String.fromCharCode(65 + idx)}</span>
+          <span class="flex-1">${opt.text}</span>
+        `;
+        btn.onclick = () => checkQuestionAnswer(opt, btn);
+        container.appendChild(btn);
+      });
+    }
+
+    function toggleHint() {
+      playBeep('click');
+      const box = document.getElementById('game-hint-box');
+      const isHidden = box.classList.contains('hidden');
+      box.classList.toggle('hidden', !isHidden);
+      document.getElementById('hint-toggle-text').innerText = isHidden ? 'Ocultar Dica' : 'Ver Dica do Professor';
+    }
+
+    function checkQuestionAnswer(selectedOpt, btnElement) {
+      if (hasAnsweredCurrent) return;
+      hasAnsweredCurrent = true;
+
+      const q = GAME_QUESTIONS[currentQuestionIndex];
+      const feedbackBox = document.getElementById('game-feedback');
+      const feedbackText = document.getElementById('game-feedback-text');
+      const feedbackIcon = document.getElementById('game-feedback-icon');
+      const allButtons = document.getElementById('game-options-container').querySelectorAll('button');
+
+      allButtons.forEach(b => {
+        b.disabled = true;
+        b.classList.remove('hover:bg-slate-800', 'hover:border-indigo-500/50');
+      });
+
+      if (selectedOpt.correct) {
+        score += 100;
+        updateScoreUI();
+        playBeep('success');
+        btnElement.classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-200');
+
+        feedbackBox.className = "mt-4 p-3 rounded-xl text-xs font-semibold flex items-start gap-2.5 bg-emerald-950/60 border border-emerald-500/40 text-emerald-200";
+        feedbackIcon.setAttribute('data-lucide', 'check-circle-2');
+        feedbackText.innerText = q.explanation;
+      } else {
+        playBeep('error');
+        btnElement.classList.add('bg-rose-500/20', 'border-rose-500', 'text-rose-200');
+
+        allButtons.forEach((b, i) => {
+          if (q.options[i].correct) {
+            b.classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-200');
+          }
+        });
+
+        feedbackBox.className = "mt-4 p-3 rounded-xl text-xs font-semibold flex items-start gap-2.5 bg-rose-950/60 border border-rose-500/40 text-rose-200";
+        feedbackIcon.setAttribute('data-lucide', 'alert-circle');
+        feedbackText.innerText = `Atenção: ${q.explanation}`;
+      }
+
+      feedbackBox.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function nextQuestion() {
+      playBeep('click');
+      currentQuestionIndex++;
+      if (currentQuestionIndex < GAME_QUESTIONS.length) {
+        renderQuestion();
+      } else {
+        playBeep('success');
+        document.getElementById('mode-game').children[0].classList.add('hidden');
+        document.getElementById('game-finish-card').classList.remove('hidden');
+        document.getElementById('game-final-score').innerText = score;
+        if (window.confetti) {
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        }
       }
     }
 
@@ -1149,9 +1127,9 @@
       headerBadge.classList.remove('hidden');
     }
 
-    /* ==========================================================================
-       5. MINI-GAME CONTRA O RELÓGIO (DETETIVE DE EULER)
-       ========================================================================== */
+    /* --------------------------------------------------------------------------
+       5. DETETIVE DE EULER (JOGO CONTRA O RELÓGIO)
+       -------------------------------------------------------------------------- */
     let speedTimer = null;
     let speedTimeLeft = 30;
     let speedStreak = 0;
@@ -1171,9 +1149,7 @@
       speedTimer = setInterval(() => {
         speedTimeLeft--;
         document.getElementById('speed-timer').innerText = `${speedTimeLeft}s`;
-        if (speedTimeLeft <= 0) {
-          endSpeedGame();
-        }
+        if (speedTimeLeft <= 0) endSpeedGame();
       }, 1000);
 
       generateSpeedRound();
@@ -1182,31 +1158,25 @@
     function endSpeedGame() {
       speedActive = false;
       clearInterval(speedTimer);
-      playBeep('win');
+      playBeep('success');
       document.getElementById('speed-start-btn').classList.remove('hidden');
-      document.getElementById('speed-start-btn').innerHTML = `<i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>Jogar Novamente (Combo Máximo: ${speedStreak})</span>`;
+      document.getElementById('speed-start-btn').innerHTML = `<i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>Jogar Novamente (Melhor Combo: ${speedStreak})</span>`;
       document.getElementById('speed-options-grid').innerHTML = `
         <div class="col-span-2 p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl text-center text-xs text-indigo-200">
-          ⏱️ Tempo esgotado! Você acertou <strong>${speedStreak}</strong> desafios em 30 segundos!
+          ⏱️ Tempo esgotado! Você acertou <strong>${speedStreak}</strong> cálculos seguidos!
         </div>
       `;
       if (window.lucide) lucide.createIcons();
-      if (window.confetti && speedStreak >= 5) {
-        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-      }
     }
 
     function generateSpeedRound() {
       if (!speedActive) return;
 
-      // Escolhe um poliedro aleatório para inspirar a rodada
       const keys = Object.keys(SOLIDS_DATA);
       const chosenSolid = SOLIDS_DATA[keys[Math.floor(Math.random() * keys.length)]];
       loadSolid(chosenSolid.id);
 
-      // Sorteia quem será a incógnita (0: V, 1: A, 2: F)
-      const unknownType = Math.floor(Math.random() * 3);
-
+      const unknownType = Math.floor(Math.random() * 3); // 0: V, 1: A, 2: F
       const spanV = document.getElementById('speed-val-v');
       const spanA = document.getElementById('speed-val-a');
       const spanF = document.getElementById('speed-val-f');
@@ -1228,7 +1198,6 @@
         currentSpeedAnswer = chosenSolid.f;
       }
 
-      // Gerar opções incluindo a resposta correta e 3 alternativas falsas
       const answersSet = new Set([currentSpeedAnswer]);
       while (answersSet.size < 4) {
         const offset = (Math.floor(Math.random() * 7) - 3);
@@ -1253,7 +1222,6 @@
 
     function checkSpeedAnswer(val, btn) {
       if (!speedActive) return;
-
       const feedback = document.getElementById('speed-feedback');
 
       if (val === currentSpeedAnswer) {
@@ -1262,69 +1230,48 @@
         updateScoreUI();
         playBeep('success');
         document.getElementById('speed-streak').innerText = `Combo x${speedStreak}`;
-        feedback.innerText = `+50 pts! Rápido!`;
+        feedback.innerText = `+50 pts! Correto!`;
         feedback.className = "mt-3 text-center text-xs font-bold text-emerald-400";
-        setTimeout(() => feedback.className = "mt-3 text-center text-xs font-semibold h-4 text-transparent transition-all", 800);
+        setTimeout(() => feedback.className = "mt-3 text-center text-xs font-semibold h-4 text-transparent transition-all", 600);
         generateSpeedRound();
       } else {
         speedStreak = 0;
         playBeep('error');
         document.getElementById('speed-streak').innerText = `Combo x0`;
-        btn.classList.add('border-rose-500', 'bg-rose-500/30', 'shake-anim');
-        feedback.innerText = `Ops! Era ${currentSpeedAnswer}!`;
+        btn.classList.add('border-rose-500', 'bg-rose-500/30');
+        feedback.innerText = `Ops! A resposta era ${currentSpeedAnswer}!`;
         feedback.className = "mt-3 text-center text-xs font-bold text-rose-400";
-        setTimeout(() => generateSpeedRound(), 600);
+        setTimeout(() => generateSpeedRound(), 700);
       }
     }
 
-    /* ==========================================================================
-       6. NAVEGAÇÃO ENTRE ABAS
-       ========================================================================== */
+    /* --------------------------------------------------------------------------
+       6. CONTROLE DE ABAS
+       -------------------------------------------------------------------------- */
     function switchMode(mode) {
       playBeep('click');
-      const tabLabBtn = document.getElementById('tab-lab-btn');
-      const tabGameBtn = document.getElementById('tab-game-btn');
-      const tabSpeedBtn = document.getElementById('tab-speed-btn');
-      const tabTheoryBtn = document.getElementById('tab-theory-btn');
-
-      const modeLab = document.getElementById('mode-lab');
-      const modeGame = document.getElementById('mode-game');
-      const modeSpeed = document.getElementById('mode-speed');
-      const modeTheory = document.getElementById('mode-theory');
-
-      [tabLabBtn, tabGameBtn, tabSpeedBtn, tabTheoryBtn].forEach(btn => {
-        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow');
-        btn.classList.add('text-slate-400');
+      const tabs = ['lab', 'game', 'speed', 'theory'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}-btn`);
+        const panel = document.getElementById(`mode-${t}`);
+        if (t === mode) {
+          btn.classList.add('bg-indigo-600', 'text-white', 'shadow');
+          btn.classList.remove('text-slate-400');
+          panel.classList.remove('hidden');
+        } else {
+          btn.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+          btn.classList.add('text-slate-400');
+          panel.classList.add('hidden');
+        }
       });
 
-      modeLab.classList.add('hidden');
-      modeGame.classList.add('hidden');
-      modeSpeed.classList.add('hidden');
-      modeTheory.classList.add('hidden');
-
-      if (mode === 'lab') {
-        tabLabBtn.classList.add('bg-indigo-600', 'text-white', 'shadow');
-        modeLab.classList.remove('hidden');
-      } else if (mode === 'game') {
-        tabGameBtn.classList.add('bg-indigo-600', 'text-white', 'shadow');
-        modeGame.classList.remove('hidden');
-        renderQuestion();
-      } else if (mode === 'speed') {
-        tabSpeedBtn.classList.add('bg-indigo-600', 'text-white', 'shadow');
-        modeSpeed.classList.remove('hidden');
-      } else if (mode === 'theory') {
-        tabTheoryBtn.classList.add('bg-indigo-600', 'text-white', 'shadow');
-        modeTheory.classList.remove('hidden');
-      }
+      if (mode === 'game') renderQuestion();
+      setTimeout(handleResize, 100);
     }
 
     window.onload = function () {
-      // Pequeno timeout para garantir que o layout CSS do Tailwind esteja 100% calculado antes de iniciar o Three.js
-      setTimeout(() => {
-        init3D();
-        onWindowResize();
-      }, 50);
-
+      init3D();
+      setTimeout(handleResize, 100);
       if (window.lucide) lucide.createIcons();
     };
   </script>
