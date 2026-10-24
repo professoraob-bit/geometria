@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HydroLab 3D: Laboratório de Volumes e Experimentos Geométricos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #070b14;
+      color: #f1f5f9;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    #hydro-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    input[type="range"] {
+      accent-color: #06b6d4;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden">
+
+  <!-- Cabeçalho Principal -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg text-xl font-bold">
+          💧
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-300 via-white to-indigo-300 bg-clip-text text-transparent">
+            HydroLab 3D: Laboratório de Volumes
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Experimentos de Transvasamento (1/3), Princípio de Cavalieri, Troca de Líquidos e Inclinação</p>
+        </div>
+      </div>
+
+      <!-- Abas de Navegação -->
+      <div class="flex flex-wrap items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800 gap-1">
+        <button id="tab-pour-btn" onclick="switchTab('pour')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-cyan-600 text-white shadow">
+          <span>🫗 Experimento 1/3</span>
+        </button>
+        <button id="tab-cavalieri-btn" onclick="switchTab('cavalieri')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          <span>🥞 Cavalieri & Fatias</span>
+        </button>
+        <button id="tab-transfer-btn" onclick="switchTab('transfer')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          <span>📐 Troca & Inclinação</span>
+        </button>
+        <button id="tab-quiz-btn" onclick="switchTab('quiz')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+          <span>🎯 Desafios</span>
+          <span id="quiz-score-badge" class="ml-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-xs border border-amber-500/30 font-mono-num">0 pts</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Coluna Esquerda: Visualizador 3D Interativo e Telemetria -->
+    <section class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
+      
+      <!-- Container do Canvas 3D -->
+      <div class="relative w-full h-[440px] sm:h-[500px] rounded-2xl overflow-hidden border border-slate-800 bg-[#080e1e] shadow-2xl flex flex-col justify-between">
+        
+        <canvas id="hydro-canvas" width="850" height="500" class="absolute inset-0 cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Barra Superior de Status no Canvas -->
+        <div class="relative z-10 p-3 pointer-events-none flex justify-between items-start gap-2">
+          <div class="glass-card px-3.5 py-2 rounded-xl text-xs flex items-center gap-2.5 text-slate-200 shadow-lg">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <div>
+              <span id="canvas-exp-title" class="font-bold text-white text-sm block">Pirâmide vs Prisma (Mesma Base e Altura)</span>
+              <span id="canvas-exp-subtitle" class="text-[11px] text-cyan-300">Despeje 3 pirâmides cheias para completar 1 prisma inteiro!</span>
+            </div>
+          </div>
+
+          <div class="glass-card px-3 py-1.5 rounded-lg text-[11px] text-slate-300 hidden sm:flex items-center gap-2">
+            <span>🖱️ Arraste para girar 3D • Roda para Zoom</span>
+          </div>
+        </div>
+
+        <!-- Barra Inferior de Ações Rápidas no Canvas -->
+        <div class="relative z-10 p-3 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent">
+          <div class="flex flex-wrap items-center gap-2" id="canvas-quick-actions">
+            <button onclick="triggerPourStep()" id="btn-pour-main" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg transition flex items-center gap-2 active:scale-95">
+              <span>🫗 Despejar +1 Medida no Sólido Maior</span>
+            </button>
+            <button onclick="resetExperiment()" class="px-3 py-2 rounded-xl text-xs font-semibold glass-card hover:bg-slate-800 text-slate-200 transition">
+              🔄 Esvaziar Tudo
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="adjustZoom(1.12)" class="px-2.5 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-slate-200 text-xs font-bold" title="Aumentar Zoom">➕</button>
+            <button onclick="adjustZoom(0.89)" class="px-2.5 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-slate-200 text-xs font-bold" title="Diminuir Zoom">➖</button>
+            <button onclick="toggleSound()" id="btn-sound" class="px-3 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-cyan-300 text-xs font-semibold">
+              🔊 Som
+            </button>
+            <button onclick="resetCamera()" class="px-3 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-slate-200 text-xs font-semibold">
+              🎯 Câmera
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel de Equações e Medidores em Tempo Real -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="glass-card p-3.5 rounded-xl border-l-4 border-cyan-500 shadow-lg">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span id="card-1-label">Sólido Medidor (Menor)</span>
+            <span class="text-cyan-400 font-bold">1/3</span>
+          </div>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span id="card-1-val" class="text-xl sm:text-2xl font-bold font-mono-num text-cyan-300">64.0</span>
+            <span class="text-xs text-slate-400">cm³</span>
+          </div>
+          <p id="card-1-formula" class="text-[11px] font-mono-num text-slate-400 mt-1">V = (Ab × h) ÷ 3</p>
+        </div>
+
+        <div class="glass-card p-3.5 rounded-xl border-l-4 border-indigo-500 shadow-lg">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span id="card-2-label">Reservatório Principal</span>
+            <span class="text-indigo-400 font-bold">Total</span>
+          </div>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span id="card-2-val" class="text-xl sm:text-2xl font-bold font-mono-num text-indigo-300">192.0</span>
+            <span class="text-xs text-slate-400">cm³</span>
+          </div>
+          <p id="card-2-formula" class="text-[11px] font-mono-num text-slate-400 mt-1">V = Ab × h</p>
+        </div>
+
+        <div class="glass-card p-3.5 rounded-xl border-l-4 border-emerald-500 bg-emerald-500/5 shadow-lg">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span id="card-3-label" class="font-bold text-emerald-300">Líquido Acumulado</span>
+            <span id="card-3-badge" class="text-xs font-mono-num px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">0 / 3</span>
+          </div>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span id="card-3-val" class="text-xl sm:text-2xl font-black font-mono-num text-emerald-400">0.0</span>
+            <span class="text-xs text-slate-400">cm³</span>
+          </div>
+          <p id="card-3-formula" class="text-[11px] font-mono-num text-emerald-200/80 mt-1">Nível de água: 0%</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coluna Direita: Painéis de Controle por Aba -->
+    <section class="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
+
+      <!-- ABA 1: LABORATÓRIO DE TRANSVASAMENTO (1/3 e 2/3) -->
+      <div id="panel-pour" class="space-y-4">
+        <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <span>🧪 Escolha o Experimento de Volume</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Comprove visualmente por que a pirâmide e o cone têm exatamente <strong>1/3</strong> do volume do prisma e do cilindro de mesma base e altura:
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="setPourPair('pyramid_prism')" id="pair-btn-pyramid_prism" class="p-3 rounded-xl text-left border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-semibold flex items-center justify-between transition">
+              <div>
+                <span class="font-bold block text-sm text-white">1. Pirâmide ➔ Prisma Quadrangular</span>
+                <span class="text-[11px] text-cyan-300">V_pirâmide = 1/3 × V_prisma (3 despejos)</span>
+              </div>
+              <span class="text-lg">🔺➔📦</span>
+            </button>
+
+            <button onclick="setPourPair('cone_cylinder')" id="pair-btn-cone_cylinder" class="p-3 rounded-xl text-left border border-slate-700/70 bg-slate-800/40 hover:bg-slate-800 text-slate-300 text-xs font-semibold flex items-center justify-between transition">
+              <div>
+                <span class="font-bold block text-sm text-white">2. Cone ➔ Cilindro Circular</span>
+                <span class="text-[11px] text-slate-400">V_cone = 1/3 × V_cilindro (3 despejos)</span>
+              </div>
+              <span class="text-lg">🍦➔🛢️</span>
+            </button>
+
+            <button onclick="setPourPair('cone_sphere')" id="pair-btn-cone_sphere" class="p-3 rounded-xl text-left border border-slate-700/70 bg-slate-800/40 hover:bg-slate-800 text-slate-300 text-xs font-semibold flex items-center justify-between transition">
+              <div>
+                <span class="font-bold block text-sm text-white">3. Arquimedes: Cones ➔ Esfera (h = 2R)</span>
+                <span class="text-[11px] text-slate-400">2 cones cheios enchem 1 esfera (2/3 do cilindro!)</span>
+              </div>
+              <span class="text-lg">🍦➔🔮</span>
+            </button>
+          </div>
+
+          <!-- Sliders de Dimensões -->
+          <div class="pt-3 border-t border-slate-800 space-y-3">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span id="lbl-dim-base" class="text-slate-300 font-semibold">Lado da Base (L):</span>
+                <span id="val-dim-base" class="font-mono-num text-cyan-400 font-bold">6.0 cm</span>
+              </div>
+              <input type="range" id="slider-base" min="3" max="10" step="0.5" value="6" oninput="updateDimensions()" class="w-full cursor-pointer">
+            </div>
+
+            <div id="height-slider-wrap">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Altura dos Sólidos (h):</span>
+                <span id="val-dim-height" class="font-mono-num text-cyan-400 font-bold">12.0 cm</span>
+              </div>
+              <input type="range" id="slider-height" min="6" max="18" step="0.5" value="12" oninput="updateDimensions()" class="w-full cursor-pointer">
+            </div>
+          </div>
+
+          <!-- Medidor Visual de Frações (1/3, 2/3, 3/3) -->
+          <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400 font-semibold">Progresso do Transvasamento:</span>
+              <span id="pour-fraction-text" class="font-mono-num font-bold text-cyan-300">0 de 3 medidas (0%)</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 h-3" id="pour-bars-container">
+              <div id="pour-bar-1" class="rounded-l-full bg-slate-800 transition-all duration-500"></div>
+              <div id="pour-bar-2" class="bg-slate-800 transition-all duration-500"></div>
+              <div id="pour-bar-3" class="rounded-r-full bg-slate-800 transition-all duration-500"></div>
+            </div>
+            <p id="pour-pedagogical-note" class="text-[11px] text-slate-300 leading-relaxed pt-1">
+              Clique em <strong>"Despejar +1 Medida"</strong> para encher o sólido menor e transferir a água para o sólido maior.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 2: PRINCÍPIO DE CAVALIERI & FATIAS -->
+      <div id="panel-cavalieri" class="hidden space-y-4">
+        <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <span>🥞 Princípio de Cavalieri (Fatiamento)</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Imagine um sólido formado por uma pilha de moedas ou cartões. Se inclinarmos a pilha (cisalhamento), a área de cada fatia e a altura total não mudam — logo, o <strong>volume permanece idêntico</strong>!
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setCavalieriShape('cylinder')" id="cav-btn-cylinder" class="p-2.5 rounded-xl border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-bold transition">
+              🛢️ Pilha Cilíndrica
+            </button>
+            <button onclick="setCavalieriShape('pyramid')" id="cav-btn-pyramid" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 text-xs font-bold transition">
+              🔺 Pirâmide em Camadas
+            </button>
+          </div>
+
+          <div class="space-y-3 pt-2 border-t border-slate-800">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Inclinação Lateral (Cisalhamento):</span>
+                <span id="val-cav-shear" class="font-mono-num text-amber-400 font-bold">0.0 (Reto)</span>
+              </div>
+              <input type="range" id="slider-cav-shear" min="-1.2" max="1.2" step="0.05" value="0" oninput="updateCavalieri()" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Número de Fatias (N):</span>
+                <span id="val-cav-slices" class="font-mono-num text-cyan-400 font-bold">14 fatias</span>
+              </div>
+              <input type="range" id="slider-cav-slices" min="4" max="32" step="1" value="14" oninput="updateCavalieri()" class="w-full cursor-pointer">
+            </div>
+          </div>
+
+          <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 text-xs space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Área da Base (A_b):</span>
+              <span id="cav-stat-ab" class="font-mono-num font-bold text-white">113.1 cm²</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Altura Vertical Fixa (h):</span>
+              <span id="cav-stat-h" class="font-mono-num font-bold text-white">12.0 cm</span>
+            </div>
+            <div class="flex justify-between pt-1 border-t border-slate-800">
+              <span class="text-emerald-400 font-bold">Volume Constante:</span>
+              <span id="cav-stat-vol" class="font-mono-num font-bold text-emerald-400">1357.2 cm³</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 3: TROCA DE LÍQUIDOS E INCLINAÇÃO -->
+      <div id="panel-transfer" class="hidden space-y-4">
+        <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <span>📐 Troca de Líquidos & Inclinação</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Explore como o nível da água se comporta ao mudar a largura do recipiente ou ao inclinar um copo cilíndrico até a borda!
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setTransferSubmode('vessels')" id="trans-btn-vessels" class="p-2.5 rounded-xl border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-bold transition">
+              🔄 Troca entre Cilindros
+            </button>
+            <button onclick="setTransferSubmode('tilt')" id="trans-btn-tilt" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 text-xs font-bold transition">
+              🥛 Inclinar Copo com Água
+            </button>
+          </div>
+
+          <!-- Controles de Troca entre 2 Cilindros -->
+          <div id="subpanel-vessels" class="space-y-3 pt-2 border-t border-slate-800">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Raio do Cilindro A (Origem r₁):</span>
+                <span id="val-r1" class="font-mono-num text-cyan-400 font-bold">4.0 cm</span>
+              </div>
+              <input type="range" id="slider-r1" min="3" max="8" step="0.5" value="4" oninput="updateTransferVessels()" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Altura Inicial da Água (h₁):</span>
+                <span id="val-h1" class="font-mono-num text-cyan-400 font-bold">10.0 cm</span>
+              </div>
+              <input type="range" id="slider-h1" min="4" max="14" step="0.5" value="10" oninput="updateTransferVessels()" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Raio do Cilindro B (Destino r₂):</span>
+                <span id="val-r2" class="font-mono-num text-indigo-400 font-bold">6.0 cm</span>
+              </div>
+              <input type="range" id="slider-r2" min="3" max="9" step="0.5" value="6" oninput="updateTransferVessels()" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-amber-300 font-semibold">Transferir Água (A ➔ B):</span>
+                <span id="val-transfer-pct" class="font-mono-num text-amber-400 font-bold">100%</span>
+              </div>
+              <input type="range" id="slider-transfer-pct" min="0" max="100" step="2" value="100" oninput="updateTransferVessels()" class="w-full cursor-pointer">
+            </div>
+
+            <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+              <p class="text-slate-400">Conservação do Volume (<span class="font-mono-num text-white">V₁ = V₂</span>):</p>
+              <p id="transfer-math-explain" class="font-mono-num text-cyan-300 text-[11px]">
+                h₂ = h₁ × (r₁ / r₂)² = 10 × (4 / 6)² = 4.44 cm
+              </p>
+            </div>
+          </div>
+
+          <!-- Controles de Inclinação do Copo -->
+          <div id="subpanel-tilt" class="hidden space-y-3 pt-2 border-t border-slate-800">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Ângulo de Inclinação do Copo (θ):</span>
+                <span id="val-tilt-angle" class="font-mono-num text-amber-400 font-bold">25°</span>
+              </div>
+              <input type="range" id="slider-tilt-angle" min="0" max="60" step="1" value="25" oninput="updateTiltSim()" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Nível Inicial (Copo em pé):</span>
+                <span id="val-tilt-fill" class="font-mono-num text-cyan-400 font-bold">50% (Metade)</span>
+              </div>
+              <input type="range" id="slider-tilt-fill" min="30" max="80" step="5" value="50" oninput="updateTiltSim()" class="w-full cursor-pointer">
+            </div>
+
+            <div id="tilt-status-box" class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+              <span id="tilt-alert-title" class="font-bold text-emerald-400 block">✅ Sem derramamento</span>
+              <p id="tilt-alert-desc" class="text-[11px] text-slate-300">
+                A superfície da água permanece sempre horizontal (paralela ao solo) enquanto o cilindro inclina.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 4: DESAFIOS PRÁTICOS (QUIZ) -->
+      <div id="panel-quiz" class="hidden space-y-4">
+        <div id="quiz-card-active" class="glass-card p-5 rounded-2xl border border-cyan-500/30 shadow-xl space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 block">Exercícios Guiados</span>
+              <h2 id="quiz-q-counter" class="text-sm font-bold text-white">Desafio 1 de 8</h2>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 block">Pontos</span>
+              <span id="quiz-score-display" class="text-lg font-black font-mono-num text-amber-400">0</span>
+            </div>
+          </div>
+
+          <div>
+            <span id="quiz-topic-tag" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Relação Pirâmide x Prisma</span>
+            <p id="quiz-q-text" class="text-sm font-semibold text-slate-100 mt-2 leading-relaxed">
+              Carregando pergunta...
+            </p>
+          </div>
+
+          <div>
+            <button onclick="toggleQuizHint()" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+              💡 <span id="quiz-hint-btn-lbl">Ver Dica Experimental</span>
+            </button>
+            <div id="quiz-hint-box" class="hidden mt-2 p-2.5 rounded-lg bg-cyan-950/50 border border-cyan-500/30 text-xs text-cyan-200"></div>
+          </div>
+
+          <div id="quiz-options-list" class="grid grid-cols-1 gap-2"></div>
+
+          <div id="quiz-feedback-box" class="hidden p-3 rounded-xl text-xs font-semibold">
+            <p id="quiz-feedback-msg" class="leading-relaxed"></p>
+            <button onclick="nextQuizQuestion()" class="mt-2.5 px-3.5 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-bold hover:bg-slate-200 transition shadow">
+              Próximo Desafio →
+            </button>
+          </div>
+        </div>
+
+        <div id="quiz-card-done" class="hidden glass-card p-6 rounded-2xl border border-emerald-500/30 text-center space-y-3">
+          <div class="text-4xl">🏆</div>
+          <h3 class="text-lg font-bold text-white">Laboratório Concluído com Sucesso!</h3>
+          <p class="text-xs text-slate-300">Você dominou a razão 1/3 de pirâmides e cones, o Princípio de Cavalieri e a transferência de líquidos.</p>
+          <div class="py-2 px-4 rounded-xl bg-slate-900 border border-slate-800 inline-block font-mono-num text-xl font-bold text-emerald-400">
+            Total: <span id="quiz-final-pts">0</span> pts
+          </div>
+          <div>
+            <button onclick="restartQuiz()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold shadow-lg transition">
+              🔄 Refazer Desafios
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="mt-auto border-t border-slate-800/80 bg-slate-950/80 py-3 px-4 text-center text-xs text-slate-500">
+    HydroLab 3D • Simulador Interativo de Volumes e Líquidos (Renderização Universal HTML5 Canvas 2D)
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       1. SINTETIZADOR DE ÁUDIO (SOM DE ÁGUA E FEEDBACK SEM ARQUIVOS EXTERNOS)
+       ========================================================================== */
+    let soundOn = true;
+    let audioCtx = null;
+
+    function initAudio() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!audioCtx && AudioContextClass) audioCtx = new AudioContextClass();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSoundEffect(type) {
+      if (!soundOn) return;
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'pour') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(640, now + 0.45);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.48);
+          osc.start(now);
+          osc.stop(now + 0.48);
+        } else if (type === 'success') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.22);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        } else if (type === 'error') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(165, now + 0.12);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.24);
+          osc.start(now);
+          osc.stop(now + 0.24);
+        } else if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(580, now);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        }
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundOn = !soundOn;
+      const btn = document.getElementById('btn-sound');
+      btn.innerText = soundOn ? '🔊 Som' : '🔇 Mudo';
+      btn.classList.toggle('text-cyan-300', soundOn);
+      btn.classList.toggle('text-slate-500', !soundOn);
+    }
+
+    /* ==========================================================================
+       2. ESTADO GLOBAL DA APLICAÇÃO E CÂMERA 3D
+       ========================================================================== */
+    let activeTab = 'pour'; // 'pour' | 'cavalieri' | 'transfer' | 'quiz'
+    let camRotX = -0.32;
+    let camRotY = 0.52;
+    let camZoom = 1.0;
+    let isDraggingCanvas = false;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+    let waveTick = 0;
+
+    // Estado Aba 1: Transvasamento (1/3 e 2/3)
+    let pourPair = 'pyramid_prism'; // 'pyramid_prism' | 'cone_cylinder' | 'cone_sphere'
+    let baseDim = 6.0;   // Lado L ou Raio R (cm)
+    let solidHeight = 12.0; // Altura h (cm)
+    let pourCount = 0;   // Quantos despejos já foram feitos (0, 1, 2, 3)
+    let maxPours = 3;
+    let targetFillRatio = 0;  // Nível alvo no recipiente maior (0 a 1)
+    let currentFillRatio = 0; // Nível animado atual (0 a 1)
+    let pourAnimProgress = 0; // 0 = parado, >0 animando jato de água
+    let isPouringAnim = false;
+
+    // Estado Aba 2: Cavalieri
+    let cavShape = 'cylinder'; // 'cylinder' | 'pyramid'
+    let cavShear = 0.0;
+    let cavSlices = 14;
+
+    // Estado Aba 3: Troca de Líquidos & Inclinação
+    let transferSubmode = 'vessels'; // 'vessels' | 'tilt'
+    let vesselR1 = 4.0;
+    let vesselH1 = 10.0;
+    let vesselR2 = 6.0;
+    let transferPct = 100;
+    let tiltAngleDeg = 25;
+    let tiltFillPct = 50;
+
+    /* ==========================================================================
+       3. FUNÇÕES DE PROJEÇÃO 3D EM CANVAS 2D PURO
+       ========================================================================== */
+    function project3D(x, y, z, cx, cy, scale) {
+      // Rotação Y
+      const cosY = Math.cos(camRotY), sinY = Math.sin(camRotY);
+      const x1 = x * cosY + z * sinY;
+      const z1 = -x * sinY + z * cosY;
+      // Rotação X
+      const cosX = Math.cos(camRotX), sinX = Math.sin(camRotX);
+      const y2 = y * cosX - z1 * sinX;
+      const z2 = y * sinX + z1 * cosX;
+
+      const fov = 7.5;
+      const persp = fov / Math.max(2.0, fov - z2);
+      return {
+        sx: cx + x1 * scale * persp,
+        sy: cy + y2 * scale * persp,
+        z: z2,
+        persp
+      };
+    }
+
+    // Desenha um polígono 3D projetado no Canvas
+    function drawPolygon3D(ctx, pts3D, cx, cy, scale, fillStyle, strokeStyle, lineWidth = 1.5) {
+      if (pts3D.length < 3) return;
+      const proj = pts3D.map(p => project3D(p[0], p[1], p[2], cx, cy, scale));
+      ctx.beginPath();
+      ctx.moveTo(proj[0].sx, proj[0].sy);
+      for (let i = 1; i < proj.length; i++) {
+        ctx.lineTo(proj[i].sx, proj[i].sy);
+      }
+      ctx.closePath();
+      if (fillStyle) {
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+      }
+      if (strokeStyle) {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lineWidth;
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+      }
+    }
+
+    // Gera pontos de um anel horizontal (para cilindros, cones e esferas)
+    function getRingPoints(centerX, y, centerZ, radiusX, radiusZ, segments = 24) {
+      const pts = [];
+      for (let i = 0; i < segments; i++) {
+        const ang = (i * 2 * Math.PI) / segments;
+        pts.push([
+          centerX + radiusX * Math.cos(ang),
+          y,
+          centerZ + radiusZ * Math.sin(ang)
+        ]);
+      }
+      return pts;
+    }
+
+    /* ==========================================================================
+       4. RENDERIZADORES ESPECÍFICOS DE CADA EXPERIMENTO 3D
+       ========================================================================== */
+
+    // Renderiza um Prisma Quadrangular Transparente com Água Interna
+    function renderBoxWithWater(ctx, cx, cy, scale, offsetX, halfW, height, fillFrac, labelTop) {
+      const yBot = height / 2;
+      const yTop = -height / 2;
+      const yWater = yBot - height * Math.min(1, Math.max(0, fillFrac));
+
+      const corners = [
+        [-halfW, 0, -halfW],
+        [ halfW, 0, -halfW],
+        [ halfW, 0,  halfW],
+        [-halfW, 0,  halfW]
+      ];
+
+      // 1. Se houver água, desenhar o bloco líquido ciano brilhante
+      if (fillFrac > 0.005) {
+        const wFaces = [];
+        for (let i = 0; i < 4; i++) {
+          const ni = (i + 1) % 4;
+          wFaces.push([
+            [offsetX + corners[i][0], yBot, corners[i][2]],
+            [offsetX + corners[ni][0], yBot, corners[ni][2]],
+            [offsetX + corners[ni][0], yWater, corners[ni][2]],
+            [offsetX + corners[i][0], yWater, corners[i][2]]
+          ]);
+        }
+        wFaces.forEach(f => drawPolygon3D(ctx, f, cx, cy, scale, 'rgba(6, 182, 212, 0.58)', 'rgba(103, 232, 249, 0.7)', 1.2));
+
+        // Superfície livre da água no topo
+        const waterTop = corners.map(c => [
+          offsetX + c[0],
+          yWater + Math.sin(waveTick + c[0]) * 0.03,
+          c[2]
+        ]);
+        drawPolygon3D(ctx, waterTop, cx, cy, scale, 'rgba(34, 211, 238, 0.82)', '#ffffff', 1.8);
+      }
+
+      // 2. Desenhar as paredes de vidro do Prisma + marcas de 1/3 e 2/3
+      const botPts = corners.map(c => [offsetX + c[0], yBot, c[2]]);
+      const topPts = corners.map(c => [offsetX + c[0], yTop, c[2]]);
+
+      drawPolygon3D(ctx, botPts, cx, cy, scale, 'rgba(99, 102, 241, 0.15)', 'rgba(165, 180, 252, 0.6)', 1.5);
+      for (let i = 0; i < 4; i++) {
+        const ni = (i + 1) % 4;
+        const side = [botPts[i], botPts[ni], topPts[ni], topPts[i]];
+        drawPolygon3D(ctx, side, cx, cy, scale, 'rgba(148, 163, 184, 0.08)', 'rgba(226, 232, 240, 0.75)', 1.8);
+      }
+      drawPolygon3D(ctx, topPts, cx, cy, scale, null, 'rgba(255, 255, 255, 0.9)', 2.0);
+
+      // Marcas tracejadas de 1/3 e 2/3 da altura
+      [1/3, 2/3].forEach((frac, idx) => {
+        const ym = yBot - height * frac;
+        const mPts = corners.map(c => [offsetX + c[0], ym, c[2]]);
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        drawPolygon3D(ctx, mPts, cx, cy, scale, null, 'rgba(251, 191, 36, 0.75)', 1.3);
+        ctx.restore();
+        const labelPos = project3D(offsetX + halfW + 0.25, ym, 0, cx, cy, scale);
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(`${idx + 1}/3`, labelPos.sx, labelPos.sy + 4);
+      });
+
+      // Rótulo superior
+      const titlePos = project3D(offsetX, yTop - 0.35, 0, cx, cy, scale);
+      ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'center';
+      ctx.fillText(labelTop, titlePos.sx, titlePos.sy);
+    }
+
+    // Renderiza uma Pirâmide Quadrangular (com inclinação durante o despejo)
+    function renderPyramidVessel(ctx, cx, cy, scale, offsetX, halfW, height, fillFrac, tiltAngle, labelTop) {
+      const yBot = height / 2;
+      const yApex = -height / 2;
+
+      const transformLocal = (lx, ly, lz) => {
+        // Gira ao redor do canto direito superior ao despejar
+        const cosT = Math.cos(tiltAngle), sinT = Math.sin(tiltAngle);
+        const rx = lx * cosT - ly * sinT;
+        const ry = lx * sinT + ly * cosT;
+        return [offsetX + rx, ry, lz];
+      };
+
+      const baseCorners = [
+        [-halfW, yBot, -halfW],
+        [ halfW, yBot, -halfW],
+        [ halfW, yBot,  halfW],
+        [-halfW, yBot,  halfW]
+      ];
+      const apex = [0, yApex, 0];
+
+      // Água dentro da pirâmide
+      if (fillFrac > 0.01) {
+        const wRatio = Math.min(1, fillFrac);
+        const yW = yBot - height * wRatio;
+        const wHalf = halfW * (1 - wRatio * 0.85);
+        const wTopCorners = [
+          [-wHalf, yW, -wHalf],
+          [ wHalf, yW, -wHalf],
+          [ wHalf, yW,  wHalf],
+          [-wHalf, yW,  wHalf]
+        ];
+        for (let i = 0; i < 4; i++) {
+          const ni = (i + 1) % 4;
+          const face = [
+            transformLocal(...baseCorners[i]),
+            transformLocal(...baseCorners[ni]),
+            transformLocal(...wTopCorners[ni]),
+            transformLocal(...wTopCorners[i])
+          ];
+          drawPolygon3D(ctx, face, cx, cy, scale, 'rgba(6, 182, 212, 0.65)', 'rgba(103, 232, 249, 0.8)', 1.2);
+        }
+      }
+
+      // Arestas de vidro da pirâmide
+      const tBase = baseCorners.map(c => transformLocal(...c));
+      const tApex = transformLocal(...apex);
+      drawPolygon3D(ctx, tBase, cx, cy, scale, 'rgba(6, 182, 212, 0.14)', 'rgba(165, 243, 252, 0.8)', 1.6);
+      for (let i = 0; i < 4; i++) {
+        const ni = (i + 1) % 4;
+        drawPolygon3D(ctx, [tBase[i], tBase[ni], tApex], cx, cy, scale, 'rgba(148, 163, 184, 0.09)', 'rgba(255, 255, 255, 0.88)', 1.8);
+      }
+
+      const titlePos = project3D(offsetX, yApex - 0.35, 0, cx, cy, scale);
+      ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = '#67e8f9';
+      ctx.textAlign = 'center';
+      ctx.fillText(labelTop, titlePos.sx, titlePos.sy);
+    }
+
+    // Renderiza um Cilindro ou Cone Circular 3D com Água
+    function renderCircularVessel(ctx, cx, cy, scale, offsetX, radiusBottom, radiusTop, height, fillFrac, tiltAngle, labelTop, showThirdMarks = false) {
+      const yBot = height / 2;
+      const yTop = -height / 2;
+      const segs = 24;
+
+      const transformLocal = (lx, ly, lz) => {
+        const cosT = Math.cos(tiltAngle), sinT = Math.sin(tiltAngle);
+        const rx = lx * cosT - ly * sinT;
+        const ry = lx * sinT + ly * cosT;
+        return [offsetX + rx, ry, lz];
+      };
+
+      // Água interna
+      if (fillFrac > 0.005) {
+        const f = Math.min(1, Math.max(0, fillFrac));
+        const yW = yBot - height * f;
+        const rW = radiusBottom + (radiusTop - radiusBottom) * f;
+        const botRing = getRingPoints(0, yBot, 0, radiusBottom, radiusBottom, segs).map(p => transformLocal(...p));
+        const topRing = getRingPoints(0, yW, 0, rW, rW, segs).map(p => transformLocal(...p));
+
+        for (let i = 0; i < segs; i++) {
+          const ni = (i + 1) % segs;
+          drawPolygon3D(ctx, [botRing[i], botRing[ni], topRing[ni], topRing[i]], cx, cy, scale, 'rgba(6, 182, 212, 0.52)', null, 0);
+        }
+        drawPolygon3D(ctx, topRing, cx, cy, scale, 'rgba(34, 211, 238, 0.85)', '#ffffff', 1.6);
+      }
+
+      // Paredes externas do cilindro/cone
+      const extBot = getRingPoints(0, yBot, 0, radiusBottom, radiusBottom, segs).map(p => transformLocal(...p));
+      const extTop = getRingPoints(0, yTop, 0, Math.max(0.02, radiusTop), Math.max(0.02, radiusTop), segs).map(p => transformLocal(...p));
+
+      drawPolygon3D(ctx, extBot, cx, cy, scale, 'rgba(99, 102, 241, 0.12)', 'rgba(203, 213, 225, 0.75)', 1.6);
+      for (let i = 0; i < segs; i += 3) {
+        const ni = (i + 3) % segs;
+        drawPolygon3D(ctx, [extBot[i], extBot[ni], extTop[ni], extTop[i]], cx, cy, scale, 'rgba(148, 163, 184, 0.06)', 'rgba(226, 232, 240, 0.32)', 1.0);
+      }
+      drawPolygon3D(ctx, extTop, cx, cy, scale, null, '#ffffff', 2.0);
+
+      // Marcas de 1/3 e 2/3
+      if (showThirdMarks) {
+        [1/3, 2/3].forEach((frac, idx) => {
+          const ym = yBot - height * frac;
+          const mRing = getRingPoints(offsetX, ym, 0, radiusBottom, radiusBottom, segs);
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          drawPolygon3D(ctx, mRing, cx, cy, scale, null, 'rgba(251, 191, 36, 0.8)', 1.3);
+          ctx.restore();
+          const lPos = project3D(offsetX + radiusBottom + 0.25, ym, 0, cx, cy, scale);
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText(`${idx + 1}/3`, lPos.sx, lPos.sy + 4);
+        });
+      }
+
+      const titlePos = project3D(offsetX, yTop - 0.35, 0, cx, cy, scale);
+      ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'center';
+      ctx.fillText(labelTop, titlePos.sx, titlePos.sy);
+    }
+
+    // Renderiza Esfera Transparente com Nível de Água (Experimento de Arquimedes)
+    function renderSphereVessel(ctx, cx, cy, scale, offsetX, radius, fillFrac, labelTop) {
+      const bands = 14;
+      const segs = 22;
+      const f = Math.min(1, Math.max(0, fillFrac));
+
+      for (let b = 0; b < bands; b++) {
+        const t1 = b / bands;
+        const t2 = (b + 1) / bands;
+        const y1 = radius * (1 - 2 * t1);
+        const y2 = radius * (1 - 2 * t2);
+        const r1 = Math.sqrt(Math.max(0, radius * radius - y1 * y1));
+        const r2 = Math.sqrt(Math.max(0, radius * radius - y2 * y2));
+
+        const ring1 = getRingPoints(offsetX, y1, 0, r1, r1, segs);
+        const ring2 = getRingPoints(offsetX, y2, 0, r2, r2, segs);
+
+        const isSubmerged = t2 <= f;
+        const fillCol = isSubmerged ? 'rgba(6, 182, 212, 0.55)' : 'rgba(148, 163, 184, 0.05)';
+        const strokeCol = isSubmerged ? 'rgba(103, 232, 249, 0.5)' : 'rgba(226, 232, 240, 0.22)';
+
+        for (let i = 0; i < segs; i += 2) {
+          const ni = (i + 2) % segs;
+          drawPolygon3D(ctx, [ring1[i], ring1[ni], ring2[ni], ring2[i]], cx, cy, scale, fillCol, strokeCol, 0.8);
+        }
+      }
+
+      const titlePos = project3D(offsetX, -radius - 0.35, 0, cx, cy, scale);
+      ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = '#e2e8f9';
+      ctx.textAlign = 'center';
+      ctx.fillText(labelTop, titlePos.sx, titlePos.sy);
+    }
+
+    /* ==========================================================================
+       5. LOOP PRINCIPAL DE DESENHO DO CANVAS 2D
+       ========================================================================== */
+    function drawHydroScene() {
+      const canvas = document.getElementById('hydro-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const targetW = Math.max(320, Math.floor(rect.width * dpr));
+      const targetH = Math.max(320, Math.floor(rect.height * dpr));
+
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      const W = rect.width || 700;
+      const H = rect.height || 460;
+      const cx = W / 2;
+      const cy = H / 2 + 15;
+
+      // Fundo escuro de laboratório com grade sutil
+      const bgGrad = ctx.createRadialGradient(cx, cy, 30, cx, cy, Math.max(W, H) * 0.75);
+      bgGrad.addColorStop(0, '#101e38');
+      bgGrad.addColorStop(1, '#060a14');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+      ctx.lineWidth = 1;
+      for (let x = cx % 38; x < W; x += 38) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = cy % 38; y < H; y += 38) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+
+      waveTick += 0.08;
+      const baseScale = Math.min(W, H) * 0.145 * camZoom;
+
+      // Suavização do nível da água e da animação de despejo
+      currentFillRatio += (targetFillRatio - currentFillRatio) * 0.08;
+      if (isPouringAnim) {
+        pourAnimProgress += 0.032;
+        if (pourAnimProgress >= 1) {
+          isPouringAnim = false;
+          pourAnimProgress = 0;
+        }
+      }
+
+      // Renderizar de acordo com a aba ativa
+      if (activeTab === 'pour' || activeTab === 'quiz') {
+        renderPourTab3D(ctx, cx, cy, baseScale);
+      } else if (activeTab === 'cavalieri') {
+        renderCavalieriTab3D(ctx, cx, cy, baseScale);
+      } else if (activeTab === 'transfer') {
+        renderTransferTab3D(ctx, cx, cy, baseScale);
+      }
+
+      ctx.restore();
+      requestAnimationFrame(drawHydroScene);
+    }
+
+    function renderPourTab3D(ctx, cx, cy, scale) {
+      const normW = 0.65 + (baseDim - 3) * 0.08;
+      const normH = 1.9 + (solidHeight - 6) * 0.08;
+
+      const tilt = isPouringAnim ? Math.sin(pourAnimProgress * Math.PI) * 0.78 : 0;
+      const smallFill = isPouringAnim ? Math.max(0, 1 - pourAnimProgress * 1.1) : 1.0;
+
+      if (pourPair === 'pyramid_prism') {
+        renderPyramidVessel(ctx, cx, cy, scale, -1.65, normW, normH, smallFill, tilt, 'Pirâmide (1/3)');
+        renderBoxWithWater(ctx, cx, cy, scale, 1.55, normW, normH, currentFillRatio, 'Prisma (Base e Altura Iguais)');
+      } else if (pourPair === 'cone_cylinder') {
+        renderCircularVessel(ctx, cx, cy, scale, -1.65, normW, 0.01, normH, smallFill, tilt, 'Cone (1/3)', false);
+        renderCircularVessel(ctx, cx, cy, scale, 1.55, normW, normW, normH, currentFillRatio, 0, 'Cilindro (Mesmo r e h)', true);
+      } else if (pourPair === 'cone_sphere') {
+        renderCircularVessel(ctx, cx, cy, scale, -1.65, normW, 0.01, normW * 2, smallFill, tilt, 'Cone (h = 2R)', false);
+        renderSphereVessel(ctx, cx, cy, scale, 1.55, normW * 1.15, currentFillRatio, 'Esfera de Raio R (2 Cones)');
+      }
+
+      // Jato de água animado conectando o sólido menor ao maior durante o despejo
+      if (isPouringAnim && pourAnimProgress > 0.15 && pourAnimProgress < 0.88) {
+        const pStart = project3D(-0.85, -normH * 0.45, 0, cx, cy, scale);
+        const pEnd = project3D(1.55, normH * 0.35 * (1 - currentFillRatio), 0, cx, cy, scale);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(pStart.sx, pStart.sy);
+        ctx.quadraticCurveTo((pStart.sx + pEnd.sx) / 2 + 25, pStart.sy - 45, pEnd.sx, pEnd.sy);
+        ctx.strokeStyle = 'rgba(34, 211, 238, 0.92)';
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function renderCavalieriTab3D(ctx, cx, cy, scale) {
+      const totalH = 2.6;
+      const yBot = totalH / 2;
+      const sliceH = totalH / cavSlices;
+      const baseR = 1.15;
+
+      for (let i = 0; i < cavSlices; i++) {
+        const t = i / cavSlices;
+        const y1 = yBot - i * sliceH;
+        const y2 = y1 - sliceH * 0.88;
+        const xOffset = (t - 0.5) * cavShear * 1.6;
+        const rSlice = cavShape === 'pyramid' ? baseR * (1 - t * 0.88) : baseR;
+
+        if (cavShape === 'cylinder') {
+          const ringBot = getRingPoints(xOffset, y1, 0, rSlice, rSlice, 22);
+          const ringTop = getRingPoints(xOffset, y2, 0, rSlice, rSlice, 22);
+          drawPolygon3D(ctx, ringBot, cx, cy, scale, 'rgba(6, 182, 212, 0.38)', 'rgba(103, 232, 249, 0.7)', 1.2);
+          drawPolygon3D(ctx, ringTop, cx, cy, scale, 'rgba(56, 189, 248, 0.55)', '#ffffff', 1.4);
+        } else {
+          const cornersBot = [
+            [xOffset - rSlice, y1, -rSlice], [xOffset + rSlice, y1, -rSlice],
+            [xOffset + rSlice, y1,  rSlice], [xOffset - rSlice, y1,  rSlice]
+          ];
+          const cornersTop = [
+            [xOffset - rSlice, y2, -rSlice], [xOffset + rSlice, y2, -rSlice],
+            [xOffset + rSlice, y2,  rSlice], [xOffset - rSlice, y2,  rSlice]
+          ];
+          drawPolygon3D(ctx, cornersBot, cx, cy, scale, 'rgba(99, 102, 241, 0.42)', 'rgba(165, 180, 252, 0.8)', 1.2);
+          drawPolygon3D(ctx, cornersTop, cx, cy, scale, 'rgba(129, 140, 248, 0.65)', '#ffffff', 1.4);
+        }
+      }
+    }
+
+    function renderTransferTab3D(ctx, cx, cy, scale) {
+      if (transferSubmode === 'vessels') {
+        const p = transferPct / 100;
+        const r1Norm = vesselR1 * 0.16;
+        const r2Norm = vesselR2 * 0.16;
+        const hMaxNorm = 2.6;
+
+        const h1Rem = (vesselH1 / 15) * (1 - p);
+        const h2New = ((vesselH1 * (vesselR1 * vesselR1) / (vesselR2 * vesselR2)) / 15) * p;
+
+        renderCircularVessel(ctx, cx, cy, scale, -1.65, r1Norm, r1Norm, hMaxNorm, h1Rem, 0, `Cilindro A (r₁=${vesselR1}cm)`, false);
+        renderCircularVessel(ctx, cx, cy, scale,  1.65, r2Norm, r2Norm, hMaxNorm, Math.min(1, h2New), 0, `Cilindro B (r₂=${vesselR2}cm)`, false);
+      } else {
+        // Simulação de Inclinação de Copo Cilíndrico com Superfície Livre Horizontal
+        const theta = (tiltAngleDeg * Math.PI) / 180;
+        const r = 1.05;
+        const h = 2.5;
+        const fill = tiltFillPct / 100;
+
+        // Desenha o copo inclinado e o plano horizontal da água
+        renderCircularVessel(ctx, cx, cy, scale, 0, r, r, h, fill, theta, `Copo Inclinado (${tiltAngleDeg}°)`, false);
+
+        // Linha de referência horizontal do nível da água
+        const pLeft = project3D(-1.8, 0.15, 0, cx, cy, scale);
+        const pRight = project3D(1.8, 0.15, 0, cx, cy, scale);
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(pLeft.sx, pLeft.sy);
+        ctx.lineTo(pRight.sx, pRight.sy);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================================================
+       6. CONTROLES PEDAGÓGICOS E CÁLCULOS EM TEMPO REAL
+       ========================================================================== */
+    function setPourPair(pairKey) {
+      playSoundEffect('click');
+      pourPair = pairKey;
+      maxPours = pairKey === 'cone_sphere' ? 2 : 3;
+
+      ['pyramid_prism', 'cone_cylinder', 'cone_sphere'].forEach(k => {
+        const btn = document.getElementById(`pair-btn-${k}`);
+        if (k === pairKey) {
+          btn.className = "p-3 rounded-xl text-left border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-semibold flex items-center justify-between transition";
+        } else {
+          btn.className = "p-3 rounded-xl text-left border border-slate-700/70 bg-slate-800/40 hover:bg-slate-800 text-slate-300 text-xs font-semibold flex items-center justify-between transition";
+        }
+      });
+
+      const heightWrap = document.getElementById('height-slider-wrap');
+      const lblBase = document.getElementById('lbl-dim-base');
+      if (pairKey === 'pyramid_prism') {
+        lblBase.innerText = 'Lado da Base Quadrada (L):';
+        heightWrap.classList.remove('hidden');
+        document.getElementById('canvas-exp-title').innerText = 'Pirâmide vs Prisma (Mesma Base e Altura)';
+        document.getElementById('canvas-exp-subtitle').innerText = 'São necessárias exatamente 3 pirâmides cheias para completar 1 prisma!';
+      } else if (pairKey === 'cone_cylinder') {
+        lblBase.innerText = 'Raio da Base Circular (r):';
+        heightWrap.classList.remove('hidden');
+        document.getElementById('canvas-exp-title').innerText = 'Cone vs Cilindro (Mesmo Raio e Altura)';
+        document.getElementById('canvas-exp-subtitle').innerText = 'São necessários exatamente 3 cones cheios para encher 1 cilindro!';
+      } else {
+        lblBase.innerText = 'Raio da Esfera e do Cone (R):';
+        heightWrap.classList.add('hidden');
+        document.getElementById('canvas-exp-title').innerText = 'Descoberta de Arquimedes: Cone (h = 2R) vs Esfera';
+        document.getElementById('canvas-exp-subtitle').innerText = '2 cones de altura 2R enchem perfeitamente uma esfera de raio R!';
+      }
+
+      resetExperiment();
+    }
+
+    function updateDimensions() {
+      baseDim = parseFloat(document.getElementById('slider-base').value);
+      solidHeight = parseFloat(document.getElementById('slider-height').value);
+      document.getElementById('val-dim-base').innerText = `${baseDim.toFixed(1)} cm`;
+      document.getElementById('val-dim-height').innerText = `${solidHeight.toFixed(1)} cm`;
+      updatePourTelemetry();
+    }
+
+    function triggerPourStep() {
+      if (pourCount >= maxPours) {
+        playSoundEffect('error');
+        return;
+      }
+      playSoundEffect('pour');
+      pourCount++;
+      targetFillRatio = pourCount / maxPours;
+      isPouringAnim = true;
+      pourAnimProgress = 0;
+      updatePourTelemetry();
+    }
+
+    function resetExperiment() {
+      playSoundEffect('click');
+      pourCount = 0;
+      targetFillRatio = 0;
+      isPouringAnim = false;
+      pourAnimProgress = 0;
+      updatePourTelemetry();
+    }
+
+    function updatePourTelemetry() {
+      let vSmall = 0, vLarge = 0;
+      if (pourPair === 'pyramid_prism') {
+        const ab = baseDim * baseDim;
+        vLarge = ab * solidHeight;
+        vSmall = vLarge / 3;
+        document.getElementById('card-1-label').innerText = 'Volume da Pirâmide';
+        document.getElementById('card-1-formula').innerText = `V = (${baseDim}² × ${solidHeight}) ÷ 3`;
+        document.getElementById('card-2-label').innerText = 'Volume do Prisma';
+        document.getElementById('card-2-formula').innerText = `V = ${baseDim}² × ${solidHeight}`;
+      } else if (pourPair === 'cone_cylinder') {
+        const ab = Math.PI * baseDim * baseDim;
+        vLarge = ab * solidHeight;
+        vSmall = vLarge / 3;
+        document.getElementById('card-1-label').innerText = 'Volume do Cone';
+        document.getElementById('card-1-formula').innerText = `V = (π × ${baseDim}² × ${solidHeight}) ÷ 3`;
+        document.getElementById('card-2-label').innerText = 'Volume do Cilindro';
+        document.getElementById('card-2-formula').innerText = `V = π × ${baseDim}² × ${solidHeight}`;
+      } else {
+        const hCone = 2 * baseDim;
+        vSmall = (Math.PI * baseDim * baseDim * hCone) / 3;
+        vLarge = (4 / 3) * Math.PI * Math.pow(baseDim, 3);
+        document.getElementById('card-1-label').innerText = '1 Cone (h = 2R)';
+        document.getElementById('card-1-formula').innerText = `V = (2/3) πR³`;
+        document.getElementById('card-2-label').innerText = 'Volume da Esfera';
+        document.getElementById('card-2-formula').innerText = `V = (4/3) πR³ = 2 Cones`;
+      }
+
+      const vAccum = vSmall * pourCount;
+      document.getElementById('card-1-val').innerText = vSmall.toFixed(1);
+      document.getElementById('card-2-val').innerText = vLarge.toFixed(1);
+      document.getElementById('card-3-val').innerText = vAccum.toFixed(1);
+      document.getElementById('card-3-badge').innerText = `${pourCount} / ${maxPours}`;
+      const pct = Math.round((pourCount / maxPours) * 100);
+      document.getElementById('card-3-formula').innerText = `Nível de água: ${pct}%`;
+      document.getElementById('pour-fraction-text').innerText = `${pourCount} de ${maxPours} medidas (${pct}%)`;
+
+      for (let i = 1; i <= 3; i++) {
+        const bar = document.getElementById(`pour-bar-${i}`);
+        if (i <= pourCount) {
+          bar.className = "rounded bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-500 shadow";
+        } else {
+          bar.className = "rounded bg-slate-800 transition-all duration-500";
+        }
+      }
+
+      const note = document.getElementById('pour-pedagogical-note');
+      if (pourCount === maxPours) {
+        note.innerHTML = `<span class="text-emerald-300 font-bold">✅ Reservatório 100% Cheio!</span> Comprovamos na prática que cabem exatamente <strong>${maxPours} medidas</strong> do sólido menor dentro do maior!`;
+      } else {
+        note.innerHTML = `Você despejou <strong>${pourCount}/${maxPours}</strong>. Clique em <strong>"Despejar +1 Medida"</strong> para continuar o experimento.`;
+      }
+    }
+
+    // Controles Cavalieri
+    function setCavalieriShape(shape) {
+      playSoundEffect('click');
+      cavShape = shape;
+      document.getElementById('cav-btn-cylinder').className = shape === 'cylinder'
+        ? "p-2.5 rounded-xl border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-bold transition"
+        : "p-2.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 text-xs font-bold transition";
+      document.getElementById('cav-btn-pyramid').className = shape === 'pyramid'
+        ? "p-2.5 rounded-xl border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-bold transition"
+        : "p-2.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 text-xs font-bold transition";
+      updateCavalieri();
+    }
+
+    function updateCavalieri() {
+      cavShear = parseFloat(document.getElementById('slider-cav-shear').value);
+      cavSlices = parseInt(document.getElementById('slider-cav-slices').value);
+      document.getElementById('val-cav-shear').innerText = cavShear === 0 ? '0.0 (Reto)' : `${cavShear.toFixed(2)} (Oblíquo)`;
+      document.getElementById('val-cav-slices').innerText = `${cavSlices} fatias`;
+    }
+
+    // Controles Troca de Líquidos & Inclinação
+    function setTransferSubmode(sub) {
+      playSoundEffect('click');
+      transferSubmode = sub;
+      document.getElementById('subpanel-vessels').classList.toggle('hidden', sub !== 'vessels');
+      document.getElementById('subpanel-tilt').classList.toggle('hidden', sub !== 'tilt');
+      document.getElementById('trans-btn-vessels').className = sub === 'vessels'
+        ? "p-2.5 rounded-xl border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-bold transition"
+        : "p-2.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 text-xs font-bold transition";
+      document.getElementById('trans-btn-tilt').className = sub === 'tilt'
+        ? "p-2.5 rounded-xl border border-cyan-500 bg-cyan-600/20 text-cyan-200 text-xs font-bold transition"
+        : "p-2.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 text-xs font-bold transition";
+    }
+
+    function updateTransferVessels() {
+      vesselR1 = parseFloat(document.getElementById('slider-r1').value);
+      vesselH1 = parseFloat(document.getElementById('slider-h1').value);
+      vesselR2 = parseFloat(document.getElementById('slider-r2').value);
+      transferPct = parseFloat(document.getElementById('slider-transfer-pct').value);
+
+      document.getElementById('val-r1').innerText = `${vesselR1.toFixed(1)} cm`;
+      document.getElementById('val-h1').innerText = `${vesselH1.toFixed(1)} cm`;
+      document.getElementById('val-r2').innerText = `${vesselR2.toFixed(1)} cm`;
+      document.getElementById('val-transfer-pct').innerText = `${transferPct}%`;
+
+      const h2Full = vesselH1 * Math.pow(vesselR1 / vesselR2, 2);
+      document.getElementById('transfer-math-explain').innerText =
+        `h₂ = ${vesselH1} × (${vesselR1}/${vesselR2})² = ${h2Full.toFixed(2)} cm`;
+    }
+
+    function updateTiltSim() {
+      tiltAngleDeg = parseInt(document.getElementById('slider-tilt-angle').value);
+      tiltFillPct = parseInt(document.getElementById('slider-tilt-fill').value);
+      document.getElementById('val-tilt-angle').innerText = `${tiltAngleDeg}°`;
+      document.getElementById('val-tilt-fill').innerText = `${tiltFillPct}%`;
+
+      const critAngle = Math.round(Math.atan((100 - tiltFillPct) / 35) * (180 / Math.PI));
+      const title = document.getElementById('tilt-alert-title');
+      const desc = document.getElementById('tilt-alert-desc');
+
+      if (tiltAngleDeg >= critAngle) {
+        title.className = "font-bold text-amber-400 block";
+        title.innerText = `⚠️ Iminência de Transbordar / Derramamento! (Limite ~${critAngle}°)`;
+        desc.innerText = "A lâmina horizontal da água atingiu a borda superior do copo!";
+      } else {
+        title.className = "font-bold text-emerald-400 block";
+        title.innerText = `✅ Seguro (Limite antes de derramar: ~${critAngle}°)`;
+        desc.innerText = "O volume de água mantém-se constante enquanto a seção livre forma uma elipse horizontal.";
+      }
+    }
+
+    /* ==========================================================================
+       7. BANCO DE QUESTÕES PRÁTICAS (QUIZ DE VOLUMES)
+       ========================================================================== */
+    const QUIZ_DATA = [
+      {
+        topic: 'Experimento 1/3 (Pirâmide e Prisma)',
+        q: 'Um prisma reto e uma pirâmide possuem exatamente a mesma área da base e a mesma altura. Se o volume do prisma é 180 cm³, qual é o volume da pirâmide?',
+        hint: 'Lembre-se do nosso experimento: quantas pirâmides cheias cabem dentro do prisma?',
+        options: ['30 cm³', '60 cm³', '90 cm³', '120 cm³'],
+        ans: 1,
+        exp: 'O volume da pirâmide é exatamente 1/3 do volume do prisma de mesma base e altura: 180 ÷ 3 = 60 cm³.'
+      },
+      {
+        topic: 'Experimento 1/3 (Cone e Cilindro)',
+        q: 'Uma taça em formato de cone tem o mesmo raio da base e a mesma altura de um copo cilíndrico. Quantas taças cônicas cheias são necessárias para encher completamente o copo cilíndrico?',
+        hint: 'Teste a opção "Cone ➔ Cilindro" no Laboratório de Transvasamento!',
+        options: ['2 taças', '3 taças', '4 taças', '6 taças'],
+        ans: 1,
+        exp: 'Como V_cone = 1/3 × V_cilindro, são necessárias exatamente 3 taças cônicas para encher o cilindro!'
+      },
+      {
+        topic: 'Cálculo Direto de Volume da Pirâmide',
+        q: 'Uma pirâmide de base quadrada tem lado da base L = 6 cm e altura h = 10 cm. Qual é o seu volume?',
+        hint: 'Calcule a área do quadrado da base (6 × 6 = 36) e aplique V = (Ab × h) ÷ 3.',
+        options: ['120 cm³', '180 cm³', '240 cm³', '360 cm³'],
+        ans: 0,
+        exp: 'Área da base = 6² = 36 cm². Volume = (36 × 10) ÷ 3 = 360 ÷ 3 = 120 cm³.'
+      },
+      {
+        topic: 'Troca de Líquidos entre Cilindros',
+        q: 'Um cilindro de raio r contém água até a altura de 16 cm. Se toda essa água for despejada em outro cilindro mais largo, de raio 2r (o dobro do raio), qual será a nova altura da água?',
+        hint: 'Quando o raio dobra (2r), a área da base (πr²) fica multiplicada por 2² = 4!',
+        options: ['8 cm', '6 cm', '4 cm', '2 cm'],
+        ans: 2,
+        exp: 'Como o raio dobrou, a área da base quadruplicou (4× maior). Para conservar o volume, a altura cai para 1/4: 16 ÷ 4 = 4 cm!'
+      },
+      {
+        topic: 'Princípio de Cavalieri',
+        q: 'Duas pilhas têm exatamente 20 moedas idênticas cada: a Pilha A está perfeitamente reta (vertical) e a Pilha B está inclinada (oblíqua). Sobre os volumes das duas pilhas, é correto afirmar que:',
+        hint: 'Observe a aba "Cavalieri & Fatias" ao mover o controle de inclinação.',
+        options: [
+          'A pilha reta tem volume maior.',
+          'A pilha inclinada tem volume maior.',
+          'Ambas possuem exatamente o mesmo volume.',
+          'Não é possível calcular o volume da pilha inclinada.'
+        ],
+        ans: 2,
+        exp: 'Pelo Princípio de Cavalieri, se dois sólidos têm a mesma altura e seções transversais de mesma área em todos os níveis, seus volumes são iguais!'
+      },
+      {
+        topic: 'Descoberta de Arquimedes (Esfera vs Cone)',
+        q: 'No experimento clássico de Arquimedes, usamos um cone de raio R e altura h = 2R. Quantos cones desses cheios de água são necessários para igualar o volume de uma esfera de raio R?',
+        hint: 'V_cone = (1/3)πR²(2R) = (2/3)πR³, enquanto V_esfera = (4/3)πR³.',
+        options: ['1 cone', '2 cones', '3 cones', '4 cones'],
+        ans: 1,
+        exp: 'Exatamente 2 cones! Pois 2 × (2/3 πR³) = 4/3 πR³, que é a fórmula do volume da esfera.'
+      },
+      {
+        topic: 'Inclinação de Cilindro com Água',
+        q: 'Um copo cilíndrico de altura H = 12 cm está com água exatamente até a metade (h = 6 cm). Se inclinarmos esse copo até a iminência de a água transbordar pela borda, a água tocará:',
+        hint: 'Lembre-se da regra da simetria para cilindros preenchidos até a metade.',
+        options: [
+          'A borda superior de um lado e o ponto oposto da base inferior.',
+          'Apenas a metade da parede lateral.',
+          'Derramará metade da água imediatamente.',
+          'O centro exato do fundo do copo.'
+        ],
+        ans: 0,
+        exp: 'Por simetria, como o copo tem água até a metade (50%), na iminência de transbordar o plano da água vai da borda superior até o canto diametralmente oposto do fundo!'
+      },
+      {
+        topic: 'Razão de Volumes (Cilindro, Esfera e Cone)',
+        q: 'Considere um cilindro equilátero (h = 2R), uma esfera inscrita nele (raio R) e um cone de mesma base e altura (h = 2R). Se o cilindro tem volume 300 cm³, quais são os volumes da esfera e do cone?',
+        hint: 'O cone vale 1/3 do cilindro e a esfera vale 2/3 do cilindro!',
+        options: [
+          'Esfera = 150 cm³ e Cone = 75 cm³',
+          'Esfera = 200 cm³ e Cone = 100 cm³',
+          'Esfera = 250 cm³ e Cone = 100 cm³',
+          'Esfera = 200 cm³ e Cone = 150 cm³'
+        ],
+        ans: 1,
+        exp: 'Pelo Teorema de Arquimedes: V_cone = 1/3 de 300 = 100 cm³ e V_esfera = 2/3 de 300 = 200 cm³!'
+      }
+    ];
+
+    let quizIdx = 0;
+    let quizScore = 0;
+    let quizAnswered = false;
+
+    function renderQuizQuestion() {
+      quizAnswered = false;
+      const item = QUIZ_DATA[quizIdx];
+      document.getElementById('quiz-q-counter').innerText = `Desafio ${quizIdx + 1} de ${QUIZ_DATA.length}`;
+      document.getElementById('quiz-topic-tag').innerText = item.topic;
+      document.getElementById('quiz-q-text').innerText = item.q;
+      document.getElementById('quiz-hint-box').innerText = item.hint;
+      document.getElementById('quiz-hint-box').classList.add('hidden');
+      document.getElementById('quiz-feedback-box').classList.add('hidden');
+
+      const list = document.getElementById('quiz-options-list');
+      list.innerHTML = '';
+      item.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3 rounded-xl border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold text-slate-200 transition flex items-center gap-3";
+        btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-slate-700 text-cyan-300 flex items-center justify-center font-bold">${String.fromCharCode(65 + idx)}</span><span>${optText}</span>`;
+        btn.onclick = () => answerQuiz(idx, btn);
+        list.appendChild(btn);
+      });
+    }
+
+    function toggleQuizHint() {
+      playSoundEffect('click');
+      document.getElementById('quiz-hint-box').classList.toggle('hidden');
+    }
+
+    function answerQuiz(selectedIdx, btnElem) {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      const item = QUIZ_DATA[quizIdx];
+      const fbBox = document.getElementById('quiz-feedback-box');
+      const fbMsg = document.getElementById('quiz-feedback-msg');
+
+      if (selectedIdx === item.ans) {
+        quizScore += 100;
+        playSoundEffect('success');
+        btnElem.classList.add('border-emerald-500', 'bg-emerald-500/20', 'text-emerald-200');
+        fbBox.className = "p-3 rounded-xl text-xs font-semibold bg-emerald-950/60 border border-emerald-500/40 text-emerald-200";
+        fbMsg.innerText = `✅ Correto! ${item.exp}`;
+      } else {
+        playSoundEffect('error');
+        btnElem.classList.add('border-rose-500', 'bg-rose-500/20', 'text-rose-200');
+        fbBox.className = "p-3 rounded-xl text-xs font-semibold bg-rose-950/60 border border-rose-500/40 text-rose-200";
+        fbMsg.innerText = `❌ Explicação: ${item.exp}`;
+      }
+
+      document.getElementById('quiz-score-display').innerText = quizScore;
+      document.getElementById('quiz-score-badge').innerText = `${quizScore} pts`;
+      fbBox.classList.remove('hidden');
+    }
+
+    function nextQuizQuestion() {
+      playSoundEffect('click');
+      quizIdx++;
+      if (quizIdx < QUIZ_DATA.length) {
+        renderQuizQuestion();
+      } else {
+        document.getElementById('quiz-card-active').classList.add('hidden');
+        document.getElementById('quiz-card-done').classList.remove('hidden');
+        document.getElementById('quiz-final-pts').innerText = quizScore;
+      }
+    }
+
+    function restartQuiz() {
+      playSoundEffect('click');
+      quizIdx = 0;
+      quizScore = 0;
+      document.getElementById('quiz-score-display').innerText = 0;
+      document.getElementById('quiz-score-badge').innerText = '0 pts';
+      document.getElementById('quiz-card-active').classList.remove('hidden');
+      document.getElementById('quiz-card-done').classList.add('hidden');
+      renderQuizQuestion();
+    }
+
+    /* ==========================================================================
+       8. NAVEGAÇÃO ENTRE ABAS E INTERAÇÃO DO MOUSE / TOQUE
+       ========================================================================== */
+    function switchTab(tabKey) {
+      playSoundEffect('click');
+      activeTab = tabKey;
+      const tabs = ['pour', 'cavalieri', 'transfer', 'quiz'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}-btn`);
+        const panel = document.getElementById(`panel-${t}`);
+        if (t === tabKey) {
+          btn.classList.add('bg-cyan-600', 'text-white', 'shadow');
+          btn.classList.remove('text-slate-400');
+          panel.classList.remove('hidden');
+        } else {
+          btn.classList.remove('bg-cyan-600', 'text-white', 'shadow');
+          btn.classList.add('text-slate-400');
+          panel.classList.add('hidden');
+        }
+      });
+
+      const quickActions = document.getElementById('canvas-quick-actions');
+      quickActions.style.visibility = (tabKey === 'pour' || tabKey === 'quiz') ? 'visible' : 'hidden';
+      if (tabKey === 'quiz') renderQuizQuestion();
+    }
+
+    function adjustZoom(factor) {
+      camZoom = Math.min(Math.max(camZoom * factor, 0.65), 1.65);
+    }
+
+    function resetCamera() {
+      playSoundEffect('click');
+      camRotX = -0.32;
+      camRotY = 0.52;
+      camZoom = 1.0;
+    }
+
+    function initCanvasEvents() {
+      const canvas = document.getElementById('hydro-canvas');
+      if (!canvas) return;
+
+      const start = (x, y) => { isDraggingCanvas = true; prevMouseX = x; prevMouseY = y; };
+      const move = (x, y) => {
+        if (!isDraggingCanvas) return;
+        camRotY += (x - prevMouseX) * 0.01;
+        camRotX = Math.max(-1.1, Math.min(0.6, camRotX + (y - prevMouseY) * 0.01));
+        prevMouseX = x;
+        prevMouseY = y;
+      };
+      const end = () => { isDraggingCanvas = false; };
+
+      canvas.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+      window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+      window.addEventListener('mouseup', end);
+
+      canvas.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      canvas.addEventListener('touchmove', e => {
+        if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      canvas.addEventListener('touchend', end);
+
+      canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        adjustZoom(e.deltaY < 0 ? 1.08 : 0.92);
+      }, { passive: false });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initCanvasEvents();
+      updateDimensions();
+      updateTransferVessels();
+      updateTiltSim();
+      requestAnimationFrame(drawHydroScene);
+    });
+  </script>
+</body>
+</html>
