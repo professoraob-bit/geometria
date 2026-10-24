@@ -6,12 +6,8 @@
   <title>PoliLab 3D & Arena de Euler</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Three.js r128 -->
+  <!-- Three.js r128 estável -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
     
@@ -30,10 +26,11 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    #three-canvas-root canvas {
-      display: block !important;
-      width: 100% !important;
-      height: 100% !important;
+    #three-viewport {
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
     }
   </style>
 </head>
@@ -43,8 +40,8 @@
   <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3 sm:px-6">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
-          <i data-lucide="box" class="w-6 h-6"></i>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center text-white shadow-lg text-xl font-bold">
+          🎲
         </div>
         <div>
           <h1 class="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
@@ -57,21 +54,17 @@
       <!-- Abas de Navegação -->
       <div class="flex items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800">
         <button id="tab-lab-btn" onclick="switchMode('lab')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white shadow">
-          <i data-lucide="eye" class="w-4 h-4"></i>
-          <span>Laboratório 3D</span>
+          <span>👁️ Laboratório 3D</span>
         </button>
         <button id="tab-game-btn" onclick="switchMode('game')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
-          <i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i>
-          <span>Missões Quiz</span>
+          <span>🎯 Missões Quiz</span>
           <span id="header-score-badge" class="ml-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-xs border border-amber-500/30 hidden font-mono-num">0 pts</span>
         </button>
         <button id="tab-speed-btn" onclick="switchMode('speed')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
-          <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
-          <span>Detetive Euler</span>
+          <span>⚡ Detetive Euler</span>
         </button>
         <button id="tab-theory-btn" onclick="switchMode('theory')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
-          <i data-lucide="book-open" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Guia & Euler</span>
+          <span class="hidden sm:inline">📖 Guia & Euler</span>
         </button>
       </div>
     </div>
@@ -83,55 +76,50 @@
     <!-- Painel 3D e Métricas de V, A, F (Esquerda) -->
     <section class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
       
-      <!-- Container do Visualizador 3D -->
-      <div id="three-container-box" class="relative w-full h-[400px] sm:h-[480px] rounded-2xl overflow-hidden border border-slate-800 bg-[#070b14] shadow-2xl flex flex-col justify-between">
+      <!-- Container do Visualizador 3D com altura fixa garantida -->
+      <div id="canvas-card" class="relative w-full h-[420px] sm:h-[480px] rounded-2xl overflow-hidden border border-slate-800 bg-[#070b14] shadow-2xl flex flex-col justify-between">
         
-        <!-- Canvas Root -->
-        <div id="three-canvas-root" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
+        <!-- Canvas direto do Three.js -->
+        <canvas id="three-viewport" class="absolute inset-0 cursor-grab active:cursor-grabbing"></canvas>
 
         <!-- Indicador Superior do Sólido -->
         <div class="relative z-10 p-3 pointer-events-none flex justify-between items-start gap-2">
           <div class="glass-card px-3.5 py-2 rounded-xl text-xs flex items-center gap-2.5 text-slate-200 shadow-lg">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
             <div>
-              <span id="canvas-solid-name" class="font-bold text-white text-sm block">Octaedro Regular</span>
-              <span id="canvas-solid-class" class="text-[11px] text-indigo-300">Platão • V:6 A:12 F:8</span>
+              <span id="canvas-solid-name" class="font-bold text-white text-sm block">Tetraedro Regular</span>
+              <span id="canvas-solid-class" class="text-[11px] text-indigo-300">Platão • V:4 A:6 F:4</span>
             </div>
           </div>
 
-          <div class="glass-card px-3 py-1.5 rounded-lg text-[11px] text-slate-400 hidden sm:flex items-center gap-2">
-            <i data-lucide="rotate-3d" class="w-4 h-4 text-cyan-400"></i>
-            <span>Gire com o mouse/toque • Roda para Zoom</span>
+          <div class="glass-card px-3 py-1.5 rounded-lg text-[11px] text-slate-300 hidden sm:flex items-center gap-2">
+            <span>🖱️ Arraste para girar • Roda do mouse para Zoom</span>
           </div>
         </div>
 
         <!-- Barra inferior do Canvas com controles visuais -->
         <div class="relative z-10 p-3 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent">
           <div class="flex items-center gap-1.5 sm:gap-2">
-            <button onclick="toggleVisual('wireframe')" id="btn-wireframe" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-indigo-400">
-              <i data-lucide="git-commit" class="w-3.5 h-3.5"></i>
-              <span>Arestas</span>
+            <button onclick="toggleVisual('wireframe')" id="btn-wireframe" class="px-3 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition text-indigo-400">
+              📏 Arestas
             </button>
-            <button onclick="toggleVisual('vertices')" id="btn-vertices" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-emerald-400">
-              <i data-lucide="circle-dot" class="w-3.5 h-3.5"></i>
-              <span>Vértices</span>
+            <button onclick="toggleVisual('vertices')" id="btn-vertices" class="px-3 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition text-emerald-400">
+              🟢 Vértices
             </button>
-            <button onclick="toggleVisual('faces')" id="btn-faces" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-pink-400">
-              <i data-lucide="square" class="w-3.5 h-3.5"></i>
-              <span>Faces</span>
+            <button onclick="toggleVisual('faces')" id="btn-faces" class="px-3 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition text-pink-400">
+              🔷 Faces
             </button>
-            <button onclick="toggleAutoRotate()" id="btn-autorotate" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition flex items-center gap-1.5 text-amber-400">
-              <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
-              <span id="rotate-label">Giro</span>
+            <button onclick="toggleAutoRotate()" id="btn-autorotate" class="px-3 py-1.5 rounded-lg text-xs font-semibold glass-card hover:bg-slate-800 transition text-amber-400">
+              🔄 <span id="rotate-label">Giro</span>
             </button>
           </div>
 
           <div class="flex items-center gap-1.5">
-            <button onclick="toggleAudioMute()" id="btn-audio" class="p-2 rounded-lg glass-card hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Ligar/Desligar Som">
-              <i id="audio-icon" data-lucide="volume-2" class="w-4 h-4 text-cyan-400"></i>
+            <button onclick="toggleAudioMute()" id="btn-audio" class="px-3 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-cyan-400 text-xs font-semibold" title="Ligar/Desligar Som">
+              🔊 Som
             </button>
-            <button onclick="resetCamera()" class="p-2 rounded-lg glass-card hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Centralizar">
-              <i data-lucide="maximize-2" class="w-4 h-4"></i>
+            <button onclick="resetCamera()" class="px-3 py-1.5 rounded-lg glass-card hover:bg-slate-800 text-slate-300 text-xs font-semibold" title="Centralizar">
+              🎯 Centralizar
             </button>
           </div>
         </div>
@@ -142,10 +130,10 @@
         <div class="glass-card p-3 rounded-xl border-l-4 border-emerald-500 flex flex-col justify-between shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Vértices (V)</span>
-            <i data-lucide="circle-dot" class="w-4 h-4 text-emerald-400"></i>
+            <span class="text-emerald-400">●</span>
           </div>
           <div class="mt-1 flex items-baseline gap-2">
-            <span id="stat-v" class="text-2xl font-bold font-mono-num text-emerald-400">6</span>
+            <span id="stat-v" class="text-2xl font-bold font-mono-num text-emerald-400">4</span>
             <span class="text-[11px] text-slate-500">pontos</span>
           </div>
         </div>
@@ -153,10 +141,10 @@
         <div class="glass-card p-3 rounded-xl border-l-4 border-indigo-500 flex flex-col justify-between shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Arestas (A)</span>
-            <i data-lucide="git-commit" class="w-4 h-4 text-indigo-400"></i>
+            <span class="text-indigo-400">―</span>
           </div>
           <div class="mt-1 flex items-baseline gap-2">
-            <span id="stat-a" class="text-2xl font-bold font-mono-num text-indigo-400">12</span>
+            <span id="stat-a" class="text-2xl font-bold font-mono-num text-indigo-400">6</span>
             <span class="text-[11px] text-slate-500">segmentos</span>
           </div>
         </div>
@@ -164,10 +152,10 @@
         <div class="glass-card p-3 rounded-xl border-l-4 border-pink-500 flex flex-col justify-between shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Faces (F)</span>
-            <i data-lucide="square" class="w-4 h-4 text-pink-400"></i>
+            <span class="text-pink-400">▲</span>
           </div>
           <div class="mt-1 flex items-baseline gap-2">
-            <span id="stat-f" class="text-2xl font-bold font-mono-num text-pink-400">8</span>
+            <span id="stat-f" class="text-2xl font-bold font-mono-num text-pink-400">4</span>
             <span class="text-[11px] text-slate-500">polígonos</span>
           </div>
         </div>
@@ -175,10 +163,10 @@
         <div class="glass-card p-3 rounded-xl border-l-4 border-amber-500 flex flex-col justify-between bg-amber-500/5 shadow-lg">
           <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span class="font-bold text-amber-300">V - A + F</span>
-            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+            <span class="text-amber-400">✨</span>
           </div>
           <div class="mt-1 flex items-center justify-between">
-            <span id="stat-euler-calc" class="text-xs sm:text-sm font-mono-num text-amber-200">6 - 12 + 8 =</span>
+            <span id="stat-euler-calc" class="text-xs sm:text-sm font-mono-num text-amber-200">4 - 6 + 4 =</span>
             <span id="stat-euler-result" class="text-2xl font-black font-mono-num text-amber-400">2</span>
           </div>
         </div>
@@ -192,8 +180,7 @@
       <div id="mode-lab" class="space-y-4">
         <div class="glass-card p-4 sm:p-5 rounded-2xl border border-slate-800">
           <h2 class="text-base font-bold text-white flex items-center gap-2 mb-2">
-            <i data-lucide="shapes" class="w-5 h-5 text-indigo-400"></i>
-            Biblioteca de Poliedros
+            <span>📚 Biblioteca de Poliedros</span>
           </h2>
           <p class="text-xs text-slate-400 mb-4">
             Clique em qualquer sólido para manipulá-lo no espaço 3D e conferir a relação de Euler:
@@ -203,13 +190,13 @@
           <div class="mb-4">
             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Os 5 Poliedros de Platão</span>
             <div class="grid grid-cols-2 gap-2">
-              <button onclick="loadSolid('tetrahedron')" id="btn-solid-tetrahedron" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
+              <button onclick="loadSolid('tetrahedron')" id="btn-solid-tetrahedron" class="solid-select-btn p-2 rounded-xl text-left border border-indigo-500 bg-indigo-600/25 text-indigo-300 text-xs font-semibold flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Tetraedro (4F)
               </button>
               <button onclick="loadSolid('cube')" id="btn-solid-cube" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
                 <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Hexaedro / Cubo (6F)
               </button>
-              <button onclick="loadSolid('octahedron')" id="btn-solid-octahedron" class="solid-select-btn p-2 rounded-xl text-left border border-indigo-500 bg-indigo-600/25 text-indigo-300 text-xs font-semibold flex items-center gap-2">
+              <button onclick="loadSolid('octahedron')" id="btn-solid-octahedron" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Octaedro (8F)
               </button>
               <button onclick="loadSolid('dodecahedron')" id="btn-solid-dodecahedron" class="solid-select-btn p-2 rounded-xl text-left border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-xs font-semibold flex items-center gap-2 text-slate-300">
@@ -244,20 +231,20 @@
         <!-- Ficha Técnica -->
         <div class="glass-card p-4 sm:p-5 rounded-2xl border border-slate-800">
           <div class="flex items-center justify-between mb-2">
-            <h3 id="info-solid-title" class="font-bold text-white text-base">Octaedro Regular</h3>
+            <h3 id="info-solid-title" class="font-bold text-white text-base">Tetraedro Regular</h3>
             <span id="info-solid-tag" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Platão</span>
           </div>
           <p id="info-solid-desc" class="text-xs text-slate-300 leading-relaxed mb-3">
-            Composto por 8 faces triangulares equiláteras. Pode ser visualizado como duas pirâmides de base quadrada unidas pela base.
+            Composto por 4 faces triangulares equiláteras. É uma pirâmide regular de base triangular.
           </p>
           <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 space-y-2 text-xs">
             <div class="flex justify-between">
               <span class="text-slate-400">Formato das Faces:</span>
-              <span id="info-face-type" class="font-semibold text-slate-200">Triângulos Equiláteros (8)</span>
+              <span id="info-face-type" class="font-semibold text-slate-200">Triângulos Equiláteros (4)</span>
             </div>
             <div class="flex justify-between">
               <span class="text-slate-400">Distribuição nos Vértices:</span>
-              <span id="info-vert-order" class="font-semibold text-slate-200">4 arestas / triângulos por vértice</span>
+              <span id="info-vert-order" class="font-semibold text-slate-200">3 arestas por vértice</span>
             </div>
             <div class="flex justify-between items-center pt-1 border-t border-slate-800">
               <span class="text-slate-400">Teste de Euler:</span>
@@ -282,7 +269,7 @@
                 <span id="game-score" class="text-lg font-black font-mono-num text-amber-400">0</span>
               </div>
               <div class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                <i data-lucide="trophy" class="w-4 h-4"></i>
+                🏆
               </div>
             </div>
           </div>
@@ -300,35 +287,27 @@
 
           <div class="mt-3">
             <button onclick="toggleHint()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold">
-              <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
-              <span id="hint-toggle-text">Ver Dica do Professor</span>
+              💡 <span id="hint-toggle-text">Ver Dica do Professor</span>
             </button>
             <div id="game-hint-box" class="hidden mt-2 p-2.5 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-xs text-indigo-200 leading-relaxed">
               Dica explicativa...
             </div>
           </div>
 
-          <div id="game-options-container" class="mt-4 grid grid-cols-1 gap-2.5">
-            <!-- Alternativas injetadas via JS -->
-          </div>
+          <div id="game-options-container" class="mt-4 grid grid-cols-1 gap-2.5"></div>
 
-          <div id="game-feedback" class="hidden mt-4 p-3 rounded-xl text-xs font-semibold flex items-start gap-2.5">
-            <i id="game-feedback-icon" data-lucide="check-circle" class="w-5 h-5 flex-shrink-0"></i>
-            <div class="flex-1">
-              <p id="game-feedback-text" class="leading-relaxed"></p>
-              <button id="game-next-btn" onclick="nextQuestion()" class="mt-2.5 px-3 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-bold hover:bg-slate-200 transition shadow">
-                Próxima Questão →
-              </button>
-            </div>
+          <div id="game-feedback" class="hidden mt-4 p-3 rounded-xl text-xs font-semibold">
+            <p id="game-feedback-text" class="leading-relaxed"></p>
+            <button id="game-next-btn" onclick="nextQuestion()" class="mt-2.5 px-3 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-bold hover:bg-slate-200 transition shadow">
+              Próxima Questão →
+            </button>
           </div>
 
         </div>
 
         <!-- Tela de Conclusão do Quiz -->
         <div id="game-finish-card" class="hidden glass-card p-6 rounded-2xl border border-emerald-500/30 text-center">
-          <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center mb-3">
-            <i data-lucide="award" class="w-8 h-8"></i>
-          </div>
+          <div class="text-4xl mb-2">🎉</div>
           <h3 class="text-lg font-bold text-white">Excelente! Missões Concluídas!</h3>
           <p class="text-xs text-slate-300 mt-1">Você dominou o cálculo de arestas, sólidos de Platão e a relação de Euler.</p>
           <div class="my-4 py-2 px-4 rounded-xl bg-slate-900 border border-slate-800 inline-block font-mono-num text-xl font-bold text-emerald-400">
@@ -336,8 +315,7 @@
           </div>
           <div>
             <button onclick="restartGame()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg transition flex items-center gap-2 mx-auto">
-              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-              Refazer Missões
+              🔄 Refazer Missões
             </button>
           </div>
         </div>
@@ -354,8 +332,7 @@
             </div>
             <div class="flex items-center gap-3">
               <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 font-mono-num text-xs text-amber-300 border border-slate-700">
-                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
-                <span id="speed-timer">30s</span>
+                ⏱️ <span id="speed-timer">30s</span>
               </div>
               <div class="text-right">
                 <span id="speed-streak" class="text-xs font-bold font-mono-num text-emerald-400">Combo x0</span>
@@ -375,12 +352,12 @@
             <span class="text-slate-500">-</span>
             <div class="text-center">
               <span class="text-[10px] block text-slate-500 uppercase font-sans">Arestas</span>
-              <span id="speed-val-a" class="text-indigo-400">12</span>
+              <span id="speed-val-a" class="text-indigo-400">6</span>
             </div>
             <span class="text-slate-500">+</span>
             <div class="text-center">
               <span class="text-[10px] block text-slate-500 uppercase font-sans">Faces</span>
-              <span id="speed-val-f" class="text-pink-400">8</span>
+              <span id="speed-val-f" class="text-pink-400">4</span>
             </div>
             <span class="text-slate-500">=</span>
             <div class="text-center">
@@ -396,8 +373,7 @@
           </div>
 
           <button id="speed-start-btn" onclick="startSpeedGame()" class="w-full mt-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold text-xs rounded-xl transition shadow-lg flex items-center justify-center gap-2">
-            <i data-lucide="play" class="w-4 h-4"></i>
-            <span>Iniciar Desafio (30 segundos)</span>
+            ▶️ <span>Iniciar Desafio (30 segundos)</span>
           </button>
         </div>
       </div>
@@ -407,8 +383,7 @@
         <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-4 text-xs leading-relaxed text-slate-300">
           <div>
             <h3 class="font-bold text-white text-sm flex items-center gap-2 mb-1.5 text-indigo-400">
-              <i data-lucide="sparkles" class="w-4 h-4"></i>
-              Como calcular o número de Arestas?
+              ✨ Como calcular o número de Arestas?
             </h3>
             <p class="mb-2">
               Dependendo dos dados do exercício, use um destes caminhos:
@@ -427,11 +402,10 @@
 
           <div class="border-t border-slate-800 pt-3">
             <h3 class="font-bold text-white text-sm flex items-center gap-2 mb-1.5 text-emerald-400">
-              <i data-lucide="award" class="w-4 h-4"></i>
-              Critérios para ser Poliedro de Platão
+              🏆 Critérios para ser Poliedro de Platão
             </h3>
             <ul class="space-y-1 list-disc list-inside font-semibold text-slate-200">
-              <li>Ser convexo e satisfazer a relação de Euler: $V - A + F = 2$.</li>
+              <li>Ser convexo e satisfazer a relação de Euler: V - A + F = 2.</li>
               <li>Todas as faces devem ter o mesmo número de lados.</li>
               <li>De todos os vértices deve partir exatamente o mesmo número de arestas.</li>
             </ul>
@@ -500,16 +474,17 @@
 
     function toggleAudioMute() {
       audioEnabled = !audioEnabled;
-      const icon = document.getElementById('audio-icon');
+      const btn = document.getElementById('btn-audio');
       if (audioEnabled) {
-        icon.setAttribute('data-lucide', 'volume-2');
-        icon.className = 'w-4 h-4 text-cyan-400';
+        btn.innerText = '🔊 Som';
+        btn.classList.add('text-cyan-400');
+        btn.classList.remove('text-slate-500');
         playBeep('click');
       } else {
-        icon.setAttribute('data-lucide', 'volume-x');
-        icon.className = 'w-4 h-4 text-slate-500';
+        btn.innerText = '🔇 Mudo';
+        btn.classList.remove('text-cyan-400');
+        btn.classList.add('text-slate-500');
       }
-      if (window.lucide) lucide.createIcons();
     }
 
     /* --------------------------------------------------------------------------
@@ -525,7 +500,7 @@
         faceType: 'Triângulos Equiláteros (4)',
         vertOrder: '3 arestas por vértice',
         color: 0x6366f1,
-        createGeometry: () => new THREE.TetrahedronGeometry(2.3, 0)
+        createGeometry: () => new THREE.TetrahedronGeometry(2.4, 0)
       },
       cube: {
         id: 'cube',
@@ -580,7 +555,7 @@
         faceType: '1 Quadrado (base) + 4 Triângulos',
         vertOrder: '4 na base (3 arestas) e 1 no topo (4 arestas)',
         color: 0xf97316,
-        createGeometry: () => new THREE.ConeGeometry(2.2, 3.0, 4)
+        createGeometry: () => new THREE.ConeGeometry(2.3, 3.0, 4)
       },
       pentapyramid: {
         id: 'pentapyramid',
@@ -591,7 +566,7 @@
         faceType: '1 Pentágono + 5 Triângulos',
         vertOrder: '5 na base (3 arestas) e 1 no ápice (5 arestas)',
         color: 0xf43f5e,
-        createGeometry: () => new THREE.ConeGeometry(2.2, 3.0, 5)
+        createGeometry: () => new THREE.ConeGeometry(2.3, 3.0, 5)
       },
       triprism: {
         id: 'triprism',
@@ -618,12 +593,12 @@
     };
 
     /* --------------------------------------------------------------------------
-       3. ENGINE THREE.JS COM RENDERIZAÇÃO GARANTIDA
+       3. ENGINE THREE.JS COM RENDERIZAÇÃO BLINDADA
        -------------------------------------------------------------------------- */
     let scene, camera, renderer;
     let solidMesh = null;
     let wireframeMesh = null;
-    let verticesPoints = null;
+    let vertexSpheresGroup = null;
     let autoRotate = true;
     let showEdges = true;
     let showVertices = true;
@@ -633,12 +608,12 @@
     let previousPointerPos = { x: 0, y: 0 };
 
     function init3D() {
-      const container = document.getElementById('three-canvas-root');
-      if (!container) return;
+      const canvas = document.getElementById('three-viewport');
+      if (!canvas) return;
 
-      const rect = container.getBoundingClientRect();
-      const width = rect.width > 20 ? rect.width : 500;
-      const height = rect.height > 20 ? rect.height : 450;
+      const container = document.getElementById('canvas-card');
+      const width = container.clientWidth || 600;
+      const height = container.clientHeight || 450;
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x070b14);
@@ -646,36 +621,31 @@
       camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
       camera.position.set(0, 0, 7.5);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setSize(width, height);
-      container.innerHTML = '';
-      container.appendChild(renderer.domElement);
 
-      // Luzes intensas para visualização clara
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-      scene.add(ambientLight);
+      // Luzes fortes que garantem visibilidade em qualquer ângulo
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+      hemiLight.position.set(0, 20, 0);
+      scene.add(hemiLight);
 
       const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.0);
-      dirLight1.position.set(8, 10, 8);
+      dirLight1.position.set(5, 10, 7);
       scene.add(dirLight1);
 
-      const dirLight2 = new THREE.DirectionalLight(0x818cf8, 0.8);
-      dirLight2.position.set(-8, -6, -4);
+      const dirLight2 = new THREE.DirectionalLight(0x818cf8, 0.7);
+      dirLight2.position.set(-5, -5, -5);
       scene.add(dirLight2);
 
-      setupInteractions(container);
-      loadSolid('octahedron');
+      setupInteractions(canvas);
+      loadSolid('tetrahedron');
 
-      // Observador de Redimensionamento automático
-      const resizeObserver = new ResizeObserver(() => handleResize());
-      resizeObserver.observe(container);
-
+      window.addEventListener('resize', handleResize);
       animate();
     }
 
-    function setupInteractions(container) {
-      // Mouse e Touch unificados
+    function setupInteractions(canvas) {
       const onDown = (clientX, clientY) => {
         isPointerDown = true;
         autoRotate = false;
@@ -694,24 +664,24 @@
 
       const onUp = () => { isPointerDown = false; };
 
-      container.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY));
+      canvas.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY));
       window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
       window.addEventListener('mouseup', onUp);
 
-      container.addEventListener('touchstart', (e) => {
+      canvas.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) onDown(e.touches[0].clientX, e.touches[0].clientY);
       }, { passive: true });
 
-      container.addEventListener('touchmove', (e) => {
+      canvas.addEventListener('touchmove', (e) => {
         if (e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
       }, { passive: true });
 
-      container.addEventListener('touchend', onUp);
+      canvas.addEventListener('touchend', onUp);
 
-      container.addEventListener('wheel', (e) => {
+      canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         camera.position.z += e.deltaY * 0.005;
-        camera.position.z = Math.min(Math.max(camera.position.z, 3.2), 13.0);
+        camera.position.z = Math.min(Math.max(camera.position.z, 3.5), 14.0);
       }, { passive: false });
     }
 
@@ -721,36 +691,37 @@
 
       if (solidMesh) {
         scene.remove(solidMesh);
-        if (solidMesh.geometry) solidMesh.geometry.dispose();
       }
 
       const geom = data.createGeometry();
 
-      // Material com emissividade para garantir luminosidade mesmo se faltar iluminação
-      const material = new THREE.MeshStandardMaterial({
+      // MeshPhongMaterial: reflete luz de forma cristalina e visível
+      const material = new THREE.MeshPhongMaterial({
         color: data.color,
-        roughness: 0.25,
-        metalness: 0.15,
+        emissive: 0x111122,
+        specular: 0xffffff,
+        shininess: 40,
         transparent: true,
-        opacity: showFaces ? 0.90 : 0.08,
+        opacity: showFaces ? 0.90 : 0.06,
         side: THREE.DoubleSide,
         flatShading: true
       });
 
       solidMesh = new THREE.Mesh(geom, material);
 
-      // Arestas destacadas
-      const edgesGeom = new THREE.EdgesGeometry(geom, 12);
+      // Arestas brancas contrastantes
+      const edgesGeom = new THREE.EdgesGeometry(geom);
       const wireMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
       wireframeMesh = new THREE.LineSegments(edgesGeom, wireMat);
       wireframeMesh.visible = showEdges;
       solidMesh.add(wireframeMesh);
 
-      // Vértices destacados
+      // Vértices como esferas 3D reais (impossível não renderizar)
+      vertexSpheresGroup = new THREE.Group();
       const posAttr = geom.getAttribute('position');
       if (posAttr) {
         const uniqueVertices = [];
-        const threshold = 0.05;
+        const threshold = 0.08;
         for (let i = 0; i < posAttr.count; i++) {
           const v = new THREE.Vector3().fromBufferAttribute(posAttr, i);
           let exists = false;
@@ -763,19 +734,15 @@
           if (!exists) uniqueVertices.push(v);
         }
 
-        const pts = [];
-        uniqueVertices.forEach(v => pts.push(v.x, v.y, v.z));
-        const ptsGeom = new THREE.BufferGeometry();
-        ptsGeom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-
-        const ptsMat = new THREE.PointsMaterial({
-          color: 0x34d399,
-          size: 0.35,
-          sizeAttenuation: true
+        const sphereGeom = new THREE.SphereGeometry(0.12, 12, 12);
+        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x34d399 }); // Verde esmeralda
+        uniqueVertices.forEach(v => {
+          const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+          sphere.position.copy(v);
+          vertexSpheresGroup.add(sphere);
         });
-        verticesPoints = new THREE.Points(ptsGeom, ptsMat);
-        verticesPoints.visible = showVertices;
-        solidMesh.add(verticesPoints);
+        vertexSpheresGroup.visible = showVertices;
+        solidMesh.add(vertexSpheresGroup);
       }
 
       solidMesh.rotation.set(0.4, 0.4, 0);
@@ -819,12 +786,12 @@
         document.getElementById('btn-wireframe').classList.toggle('text-slate-500', !showEdges);
       } else if (type === 'vertices') {
         showVertices = !showVertices;
-        if (verticesPoints) verticesPoints.visible = showVertices;
+        if (vertexSpheresGroup) vertexSpheresGroup.visible = showVertices;
         document.getElementById('btn-vertices').classList.toggle('text-emerald-400', showVertices);
         document.getElementById('btn-vertices').classList.toggle('text-slate-500', !showVertices);
       } else if (type === 'faces') {
         showFaces = !showFaces;
-        if (solidMesh) solidMesh.material.opacity = showFaces ? 0.90 : 0.08;
+        if (solidMesh) solidMesh.material.opacity = showFaces ? 0.90 : 0.06;
         document.getElementById('btn-faces').classList.toggle('text-pink-400', showFaces);
         document.getElementById('btn-faces').classList.toggle('text-slate-500', !showFaces);
       }
@@ -850,11 +817,10 @@
     }
 
     function handleResize() {
-      const container = document.getElementById('three-canvas-root');
+      const container = document.getElementById('canvas-card');
       if (!container || !renderer || !camera) return;
-      const rect = container.getBoundingClientRect();
-      const w = rect.width || 500;
-      const h = rect.height || 450;
+      const w = container.clientWidth || 600;
+      const h = container.clientHeight || 450;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -863,7 +829,7 @@
     function animate() {
       requestAnimationFrame(animate);
       if (autoRotate && solidMesh) {
-        solidMesh.rotation.y += 0.006;
+        solidMesh.rotation.y += 0.007;
         solidMesh.rotation.x += 0.003;
       }
       if (renderer && scene && camera) {
@@ -1058,7 +1024,6 @@
       const q = GAME_QUESTIONS[currentQuestionIndex];
       const feedbackBox = document.getElementById('game-feedback');
       const feedbackText = document.getElementById('game-feedback-text');
-      const feedbackIcon = document.getElementById('game-feedback-icon');
       const allButtons = document.getElementById('game-options-container').querySelectorAll('button');
 
       allButtons.forEach(b => {
@@ -1072,9 +1037,8 @@
         playBeep('success');
         btnElement.classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-200');
 
-        feedbackBox.className = "mt-4 p-3 rounded-xl text-xs font-semibold flex items-start gap-2.5 bg-emerald-950/60 border border-emerald-500/40 text-emerald-200";
-        feedbackIcon.setAttribute('data-lucide', 'check-circle-2');
-        feedbackText.innerText = q.explanation;
+        feedbackBox.className = "mt-4 p-3 rounded-xl text-xs font-semibold bg-emerald-950/60 border border-emerald-500/40 text-emerald-200";
+        feedbackText.innerText = `✅ Correto! ${q.explanation}`;
       } else {
         playBeep('error');
         btnElement.classList.add('bg-rose-500/20', 'border-rose-500', 'text-rose-200');
@@ -1085,13 +1049,11 @@
           }
         });
 
-        feedbackBox.className = "mt-4 p-3 rounded-xl text-xs font-semibold flex items-start gap-2.5 bg-rose-950/60 border border-rose-500/40 text-rose-200";
-        feedbackIcon.setAttribute('data-lucide', 'alert-circle');
-        feedbackText.innerText = `Atenção: ${q.explanation}`;
+        feedbackBox.className = "mt-4 p-3 rounded-xl text-xs font-semibold bg-rose-950/60 border border-rose-500/40 text-rose-200";
+        feedbackText.innerText = `❌ Atenção: ${q.explanation}`;
       }
 
       feedbackBox.classList.remove('hidden');
-      if (window.lucide) lucide.createIcons();
     }
 
     function nextQuestion() {
@@ -1104,9 +1066,6 @@
         document.getElementById('mode-game').children[0].classList.add('hidden');
         document.getElementById('game-finish-card').classList.remove('hidden');
         document.getElementById('game-final-score').innerText = score;
-        if (window.confetti) {
-          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        }
       }
     }
 
@@ -1160,13 +1119,12 @@
       clearInterval(speedTimer);
       playBeep('success');
       document.getElementById('speed-start-btn').classList.remove('hidden');
-      document.getElementById('speed-start-btn').innerHTML = `<i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>Jogar Novamente (Melhor Combo: ${speedStreak})</span>`;
+      document.getElementById('speed-start-btn').innerHTML = `🔄 <span>Jogar Novamente (Melhor Combo: ${speedStreak})</span>`;
       document.getElementById('speed-options-grid').innerHTML = `
         <div class="col-span-2 p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl text-center text-xs text-indigo-200">
           ⏱️ Tempo esgotado! Você acertou <strong>${speedStreak}</strong> cálculos seguidos!
         </div>
       `;
-      if (window.lucide) lucide.createIcons();
     }
 
     function generateSpeedRound() {
@@ -1266,13 +1224,12 @@
       });
 
       if (mode === 'game') renderQuestion();
-      setTimeout(handleResize, 100);
+      setTimeout(handleResize, 50);
     }
 
     window.onload = function () {
       init3D();
-      setTimeout(handleResize, 100);
-      if (window.lucide) lucide.createIcons();
+      setTimeout(handleResize, 50);
     };
   </script>
 </body>
